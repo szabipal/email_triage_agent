@@ -15,7 +15,7 @@ class _TextExtractor(HTMLParser):
         self.parts.append(data)
 
 
-def normalize_email(email: Email) -> ProcessedEmail:
+def normalize_email(email: Email, *, locale_hint: str = "en_US") -> ProcessedEmail:
     body = (
         html_to_text(email.body_raw)
         if _looks_like_html(email.body_raw)
@@ -23,6 +23,7 @@ def normalize_email(email: Email) -> ProcessedEmail:
     )
     body_without_quotes = strip_quoted_reply(body)
     cleaned_body, signature_removed = strip_signature(body_without_quotes)
+    language, confidence = detect_language(cleaned_body)
     return ProcessedEmail(
         id=f"processed-{email.id}",
         email_id=email.id,
@@ -32,6 +33,9 @@ def normalize_email(email: Email) -> ProcessedEmail:
         status=ProcessedEmailStatus.PROCESSED,
         body_without_quotes=collapse_whitespace(body_without_quotes),
         signature_removed=signature_removed,
+        detected_language=language,
+        language_confidence=confidence,
+        locale_hint=locale_hint,
     )
 
 
@@ -65,6 +69,17 @@ def strip_signature(value: str) -> tuple[str, bool]:
         if line.strip() == "--":
             return "\n".join(lines[:index]), True
     return value, False
+
+
+def detect_language(value: str) -> tuple[str | None, float | None]:
+    lowered = value.lower()
+    if any(token in lowered for token in (" kérlek ", " szerződés", " szia")):
+        return "hu", 0.8
+    if any(token in lowered for token in ("¿", " reunión", " puedes ")):
+        return "es", 0.8
+    if value.strip():
+        return "en", 0.6
+    return None, None
 
 
 def _looks_like_html(value: str) -> bool:

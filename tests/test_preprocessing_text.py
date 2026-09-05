@@ -36,3 +36,19 @@ def test_normalize_email_removes_quoted_reply_and_signature() -> None:
     assert processed.normalized_body == "Please review this."
     assert processed.body_without_quotes == "Please review this. -- Ada"
     assert processed.signature_removed is True
+
+
+def test_normalize_email_detects_fixture_languages() -> None:
+    hungarian = normalize_email(
+        make_email("Szia, kérlek nézd át a szerződést péntekig."),
+        locale_hint="hu_HU",
+    )
+    spanish = normalize_email(
+        make_email("¿Puedes unirte a la reunión el jueves?"),
+        locale_hint="es_ES",
+    )
+
+    assert hungarian.detected_language == "hu"
+    assert hungarian.locale_hint == "hu_HU"
+    assert spanish.detected_language == "es"
+    assert spanish.locale_hint == "es_ES"
