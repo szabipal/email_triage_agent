@@ -1,0 +1,5 @@
+{
+  "dataset_path": "datasets/fixtures/dev.jsonl",
+  "expected_split": "dev",
+  "report_path": "proposed/reports/eval.dev.json"
+}
