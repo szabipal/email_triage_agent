@@ -5,12 +5,17 @@ from pydantic import ValidationError
 
 from email_agent.domain import (
     ActionItem,
+    ApprovalDecision,
+    CalendarEventProposal,
+    CalendarProposalSource,
+    CalendarProposalStatus,
     DeadlineCandidate,
     Email,
     EmailAnalysisSignals,
     EmailIdentity,
     EmailSource,
     EmailThread,
+    ExecutionStatus,
     MeetingCandidate,
     PreferenceEffect,
     PreferenceType,
@@ -20,8 +25,13 @@ from email_agent.domain import (
     PriorityResult,
     ProcessedEmail,
     ProcessedEmailStatus,
+    ProposedAction,
+    ProposedActionSource,
+    ProposedActionStatus,
+    ProposedActionType,
     RetrievalMethod,
     RetrievedContext,
+    ToolApproval,
     UserPreference,
 )
 
@@ -283,3 +293,99 @@ def test_priority_result_requires_factor() -> None:
             calculated_at=datetime(2026, 1, 2, 3, 6, tzinfo=UTC),
             ruleset_version="priority-v1",
         )
+
+
+def test_proposed_action_serializes_suggestion_state() -> None:
+    action = ProposedAction(
+        id="action-1",
+        email_id="email-1",
+        description="Review the quarterly plan",
+        action_type=ProposedActionType.TASK,
+        source=ProposedActionSource.ANALYSIS,
+        owner="user",
+        due_at=datetime(2026, 1, 9, tzinfo=UTC),
+        confidence=0.9,
+        source_excerpt="Please review before Friday.",
+        status=ProposedActionStatus.PROPOSED,
+    )
+
+    restored = ProposedAction.model_validate_json(action.model_dump_json())
+
+    assert restored == action
+
+
+def test_calendar_proposal_only_approved_status_can_execute() -> None:
+    proposal = CalendarEventProposal(
+        id="proposal-1",
+        email_id="email-1",
+        title="Planning review",
+        start_at=datetime(2026, 1, 7, 15, tzinfo=UTC),
+        status=CalendarProposalStatus.APPROVED,
+        source=CalendarProposalSource.MEETING,
+        end_at=datetime(2026, 1, 7, 15, 30, tzinfo=UTC),
+        attendees=[EmailIdentity(email="ada@example.com")],
+        confidence=0.88,
+    )
+
+    restored = CalendarEventProposal.model_validate_json(proposal.model_dump_json())
+
+    assert restored == proposal
+    assert restored.can_execute is True
+
+    rejected = proposal.model_copy(update={"status": CalendarProposalStatus.REJECTED})
+
+    assert rejected.can_execute is False
+
+
+def test_calendar_proposal_rejects_missing_start_unless_incomplete() -> None:
+    with pytest.raises(ValidationError, match="start_at"):
+        CalendarEventProposal(
+            id="proposal-1",
+            email_id="email-1",
+            title="Planning review",
+            start_at=None,
+            status=CalendarProposalStatus.PENDING,
+            source=CalendarProposalSource.MEETING,
+        )
+
+    incomplete = CalendarEventProposal(
+        id="proposal-1",
+        email_id="email-1",
+        title="Planning review",
+        start_at=None,
+        status=CalendarProposalStatus.INCOMPLETE,
+        source=CalendarProposalSource.MEETING,
+        missing_fields=["start_at"],
+    )
+
+    assert incomplete.can_execute is False
+
+
+def test_calendar_proposal_rejects_end_before_start() -> None:
+    with pytest.raises(ValidationError, match="end_at"):
+        CalendarEventProposal(
+            id="proposal-1",
+            email_id="email-1",
+            title="Planning review",
+            start_at=datetime(2026, 1, 7, 15, tzinfo=UTC),
+            end_at=datetime(2026, 1, 7, 14, 30, tzinfo=UTC),
+            status=CalendarProposalStatus.PENDING,
+            source=CalendarProposalSource.MEETING,
+        )
+
+
+def test_tool_approval_serializes_decision_and_execution_state() -> None:
+    approval = ToolApproval(
+        id="approval-1",
+        proposal_id="proposal-1",
+        tool_name="calendar",
+        decision=ApprovalDecision.APPROVED,
+        decided_at=datetime(2026, 1, 7, 14, tzinfo=UTC),
+        decided_by="user",
+        approval_notes="Looks right.",
+        execution_status=ExecutionStatus.NOT_STARTED,
+    )
+
+    restored = ToolApproval.model_validate_json(approval.model_dump_json())
+
+    assert restored == approval

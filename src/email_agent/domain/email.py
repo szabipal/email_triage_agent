@@ -59,6 +59,52 @@ class PriorityFactorDirection(StrEnum):
     NEUTRAL = "neutral"
 
 
+class ProposedActionType(StrEnum):
+    TASK = "task"
+    FOLLOW_UP = "follow_up"
+    DECISION = "decision"
+    OTHER = "other"
+
+
+class ProposedActionSource(StrEnum):
+    ANALYSIS = "analysis"
+    USER = "user"
+
+
+class ProposedActionStatus(StrEnum):
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    DISMISSED = "dismissed"
+
+
+class CalendarProposalStatus(StrEnum):
+    PENDING = "pending"
+    INCOMPLETE = "incomplete"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    EXECUTING = "executing"
+    EXECUTED = "executed"
+    FAILED = "failed"
+
+
+class CalendarProposalSource(StrEnum):
+    DEADLINE = "deadline"
+    MEETING = "meeting"
+
+
+class ApprovalDecision(StrEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ExecutionStatus(StrEnum):
+    NOT_STARTED = "not_started"
+    EXECUTING = "executing"
+    EXECUTED = "executed"
+    FAILED = "failed"
+
+
 class EmailIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -257,6 +303,78 @@ class PriorityResult(BaseModel):
     deadline_urgency: str | None = None
     low_value_penalty: str | None = None
     recalculated_from_id: str | None = None
+
+
+class ProposedAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    email_id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    action_type: ProposedActionType
+    source: ProposedActionSource
+
+    owner: str | None = None
+    due_at: datetime | None = None
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    source_excerpt: str | None = None
+    status: ProposedActionStatus | None = None
+
+
+class CalendarEventProposal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    email_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    start_at: datetime | None
+    status: CalendarProposalStatus
+    source: CalendarProposalSource
+
+    end_at: datetime | None = None
+    timezone: str | None = None
+    location: str | None = None
+    attendees: list[EmailIdentity] = Field(default_factory=list)
+    description: str | None = None
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    missing_fields: list[str] = Field(default_factory=list)
+    locale_assumption: str | None = None
+    time_ambiguity: str | None = None
+    provider_event_id: str | None = None
+
+    @property
+    def can_execute(self) -> bool:
+        return self.status == CalendarProposalStatus.APPROVED
+
+    @model_validator(mode="after")
+    def validate_event_state(self) -> CalendarEventProposal:
+        if self.status != CalendarProposalStatus.INCOMPLETE and self.start_at is None:
+            raise ValueError("start_at is required unless status is incomplete")
+
+        if (
+            self.start_at is not None
+            and self.end_at is not None
+            and self.end_at < self.start_at
+        ):
+            raise ValueError("end_at must be after start_at")
+
+        return self
+
+
+class ToolApproval(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    tool_name: str = Field(min_length=1)
+    decision: ApprovalDecision
+    decided_at: datetime
+    decided_by: str = Field(min_length=1)
+
+    approval_notes: str | None = None
+    execution_status: ExecutionStatus | None = None
+    execution_error: str | None = None
+    external_result_id: str | None = None
 
 
 class EmailThread(BaseModel):
