@@ -24,3 +24,15 @@ def test_normalize_email_converts_html_body_to_text() -> None:
     assert processed.normalized_subject == "Hello"
     assert processed.normalized_body == "Hello there ."
     assert processed.email_id == "email-1"
+
+
+def test_normalize_email_removes_quoted_reply_and_signature() -> None:
+    processed = normalize_email(
+        make_email(
+            "Please review this.\n\n--\nAda\n\nOn Mon, Bob wrote:\n> old message"
+        )
+    )
+
+    assert processed.normalized_body == "Please review this."
+    assert processed.body_without_quotes == "Please review this. -- Ada"
+    assert processed.signature_removed is True
