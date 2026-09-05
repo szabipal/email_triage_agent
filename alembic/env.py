@@ -1,9 +1,9 @@
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import create_engine
 
 from email_agent.config import load_settings
-from email_agent.persistence.database import make_engine
 from email_agent.persistence.models import Base
 
 config = context.config
@@ -15,8 +15,9 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url") or load_settings().database_url
     context.configure(
-        url=load_settings().database_url,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
     )
@@ -26,7 +27,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    engine = make_engine(load_settings())
+    url = config.get_main_option("sqlalchemy.url") or load_settings().database_url
+    engine = create_engine(url)
 
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
