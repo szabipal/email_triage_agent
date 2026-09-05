@@ -105,6 +105,12 @@ class ExecutionStatus(StrEnum):
     FAILED = "failed"
 
 
+class EmailAnalysisStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 class EmailIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -303,6 +309,23 @@ class PriorityResult(BaseModel):
     deadline_urgency: str | None = None
     low_value_penalty: str | None = None
     recalculated_from_id: str | None = None
+
+
+class EmailAnalysis(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    email_id: str = Field(min_length=1)
+    processed_email_id: str = Field(min_length=1)
+    signals_id: str = Field(min_length=1)
+    priority_result_id: str = Field(min_length=1)
+    status: EmailAnalysisStatus
+
+    retrieved_context_ids: list[str] = Field(default_factory=list)
+    calendar_proposal_ids: list[str] = Field(default_factory=list)
+    explanation: str | None = None
+    errors: list[str] = Field(default_factory=list)
+    completed_at: datetime | None = None
 
 
 class ProposedAction(BaseModel):
