@@ -13,6 +13,11 @@ class EmailSource(StrEnum):
     GMAIL = "gmail"
 
 
+class ProcessedEmailStatus(StrEnum):
+    PROCESSED = "processed"
+    FAILED = "failed"
+
+
 class EmailIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -47,6 +52,24 @@ class Email(BaseModel):
     headers: dict[str, str] = Field(default_factory=dict)
     attachments_metadata: list[EmailAttachmentMetadata] = Field(default_factory=list)
     labels: list[str] = Field(default_factory=list)
+
+
+class ProcessedEmail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    email_id: str = Field(min_length=1)
+    normalized_subject: str
+    normalized_body: str
+    processed_at: datetime
+    status: ProcessedEmailStatus
+
+    body_without_quotes: str | None = None
+    signature_removed: bool | None = None
+    detected_language: str | None = None
+    language_confidence: float | None = Field(default=None, ge=0, le=1)
+    locale_hint: str | None = None
+    processing_errors: list[str] = Field(default_factory=list)
 
 
 class EmailThread(BaseModel):
