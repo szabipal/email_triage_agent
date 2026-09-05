@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from email_agent.evaluation import FixtureRecord
+from email_agent.evaluation import DatasetSplit, FixtureRecord, validate_fixture_file
 
 DEV_FIXTURES = Path("datasets/fixtures/dev.jsonl")
 
@@ -15,7 +15,7 @@ def load_dev_fixtures() -> list[FixtureRecord]:
 
 
 def test_dev_fixture_inbox_validates() -> None:
-    records = load_dev_fixtures()
+    records = validate_fixture_file(DEV_FIXTURES, expected_split=DatasetSplit.DEV)
 
     assert len(records) >= 6
     assert all(record.split == "dev" for record in records)
