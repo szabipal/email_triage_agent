@@ -52,6 +52,12 @@ class SqlAlchemyRepository:
         record = self.session.get(EmailRecord, email_id)
         return Email.model_validate(record.payload) if record else None
 
+    def list_emails(self) -> list[Email]:
+        return [
+            Email.model_validate(record.payload)
+            for record in self.session.query(EmailRecord).all()
+        ]
+
     def save_processed_email(self, processed_email: ProcessedEmail) -> None:
         self.session.merge(
             ProcessedEmailRecord(

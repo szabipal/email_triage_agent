@@ -14,6 +14,9 @@ class InMemoryEmailRepository:
     def get_email(self, email_id: str) -> Email | None:
         return self.emails.get(email_id)
 
+    def list_emails(self) -> list[Email]:
+        return list(self.emails.values())
+
 
 def test_service_can_depend_on_email_repository_protocol() -> None:
     repository: EmailRepository = InMemoryEmailRepository()
