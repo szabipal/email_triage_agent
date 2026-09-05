@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from html.parser import HTMLParser
 
 from email_agent.domain import Email, ProcessedEmail, ProcessedEmailStatus
+from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 
 
 class _TextExtractor(HTMLParser):
@@ -16,6 +17,9 @@ class _TextExtractor(HTMLParser):
 
 
 def normalize_email(email: Email, *, locale_hint: str = "en_US") -> ProcessedEmail:
+    if not email.body_raw.strip():
+        raise ValueError("email body is empty")
+
     body = (
         html_to_text(email.body_raw)
         if _looks_like_html(email.body_raw)
@@ -37,6 +41,34 @@ def normalize_email(email: Email, *, locale_hint: str = "en_US") -> ProcessedEma
         language_confidence=confidence,
         locale_hint=locale_hint,
     )
+
+
+def preprocess_batch(
+    emails: list[Email],
+    repository: SqlAlchemyRepository,
+    *,
+    locale_hint: str = "en_US",
+) -> list[ProcessedEmail]:
+    processed_emails: list[ProcessedEmail] = []
+
+    for email in emails:
+        try:
+            processed_email = normalize_email(email, locale_hint=locale_hint)
+        except ValueError as error:
+            processed_email = ProcessedEmail(
+                id=f"processed-{email.id}",
+                email_id=email.id,
+                normalized_subject=email.subject.strip(),
+                normalized_body="",
+                processed_at=datetime.now(UTC),
+                status=ProcessedEmailStatus.FAILED,
+                processing_errors=[str(error)],
+            )
+
+        repository.save_processed_email(processed_email)
+        processed_emails.append(processed_email)
+
+    return processed_emails
 
 
 def html_to_text(value: str) -> str:
