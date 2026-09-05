@@ -4,12 +4,18 @@ import pytest
 from pydantic import ValidationError
 
 from email_agent.domain import (
+    ActionItem,
+    DeadlineCandidate,
     Email,
+    EmailAnalysisSignals,
     EmailIdentity,
     EmailSource,
     EmailThread,
+    MeetingCandidate,
     ProcessedEmail,
     ProcessedEmailStatus,
+    RetrievalMethod,
+    RetrievedContext,
 )
 
 
@@ -108,3 +114,94 @@ def test_failed_processed_email_serializes_errors_predictably() -> None:
 
     assert restored.status == ProcessedEmailStatus.FAILED
     assert restored.processing_errors == ["missing body"]
+
+
+def test_retrieved_context_serializes_source_references() -> None:
+    context = RetrievedContext(
+        id="context-1",
+        source_email_ids=["email-previous"],
+        query_email_id="email-current",
+        retrieval_method=RetrievalMethod.THREAD,
+        summary="Earlier thread confirmed the deadline.",
+        relevance_score=0.82,
+        snippet_text="Please send it by Friday.",
+        rank=1,
+        embedding_model="fake-embedding",
+        retrieval_query="quarterly planning deadline",
+    )
+
+    restored = RetrievedContext.model_validate_json(context.model_dump_json())
+
+    assert restored == context
+    assert restored.source_email_ids == ["email-previous"]
+
+
+def test_retrieved_context_rejects_current_email_as_source() -> None:
+    with pytest.raises(ValidationError, match="exclude query_email_id"):
+        RetrievedContext(
+            id="context-1",
+            source_email_ids=["email-current"],
+            query_email_id="email-current",
+            retrieval_method=RetrievalMethod.RAG,
+            summary="Bad context",
+            relevance_score=1,
+        )
+
+
+def test_analysis_signals_serialize_candidates_and_model_metadata() -> None:
+    signals = EmailAnalysisSignals(
+        id="signals-1",
+        processed_email_id="processed-1",
+        summary="Ada asks for review before Friday.",
+        category="work",
+        action_required=True,
+        low_value_type=None,
+        confidence=0.9,
+        action_items=[
+            ActionItem(
+                description="Review the quarterly plan",
+                owner="user",
+                due_at=datetime(2026, 1, 9, tzinfo=UTC),
+                confidence=0.88,
+            )
+        ],
+        deadlines=[
+            DeadlineCandidate(
+                description="Review deadline",
+                due_at=datetime(2026, 1, 9, tzinfo=UTC),
+                confidence=0.91,
+            )
+        ],
+        meeting_details=[
+            MeetingCandidate(
+                title="Planning review",
+                start_at=datetime(2026, 1, 7, 15, tzinfo=UTC),
+                end_at=datetime(2026, 1, 7, 15, 30, tzinfo=UTC),
+                attendees=[EmailIdentity(email="ada@example.com")],
+            )
+        ],
+        semantic_flags=["deadline"],
+        source_language="en",
+        output_language="en",
+        model_name="fake-llm",
+        prompt_version="analysis-v1",
+        schema_version="signals-v1",
+    )
+
+    restored = EmailAnalysisSignals.model_validate_json(signals.model_dump_json())
+
+    assert restored == signals
+    assert restored.action_items[0].description == "Review the quarterly plan"
+
+
+def test_analysis_signals_reject_invalid_confidence() -> None:
+    with pytest.raises(ValidationError, match="confidence"):
+        EmailAnalysisSignals(
+            id="signals-1",
+            processed_email_id="processed-1",
+            summary="Summary",
+            category="work",
+            action_required=False,
+            low_value_type=None,
+            confidence=1.1,
+        )

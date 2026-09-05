@@ -1,19 +1,33 @@
 from email_agent.domain.email import (
+    ActionItem,
+    DeadlineCandidate,
     Email,
+    EmailAnalysisSignals,
     EmailAttachmentMetadata,
     EmailIdentity,
     EmailSource,
     EmailThread,
+    LowValueType,
+    MeetingCandidate,
     ProcessedEmail,
     ProcessedEmailStatus,
+    RetrievalMethod,
+    RetrievedContext,
 )
 
 __all__ = [
+    "ActionItem",
+    "DeadlineCandidate",
     "Email",
+    "EmailAnalysisSignals",
     "EmailAttachmentMetadata",
     "EmailIdentity",
     "EmailSource",
     "EmailThread",
+    "LowValueType",
+    "MeetingCandidate",
     "ProcessedEmail",
     "ProcessedEmailStatus",
+    "RetrievalMethod",
+    "RetrievedContext",
 ]
