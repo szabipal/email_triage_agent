@@ -22,3 +22,6 @@ def test_initial_migration_creates_core_tables(tmp_path: Path) -> None:
         "calendar_event_proposals",
         "tool_approvals",
     } <= set(inspector.get_table_names())
+    assert "uq_emails_provider_message_id" in {
+        index["name"] for index in inspector.get_indexes("emails")
+    }

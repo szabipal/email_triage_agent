@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Index, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -12,6 +12,9 @@ class Base(DeclarativeBase):
 
 class EmailRecord(Base):
     __tablename__ = "emails"
+    __table_args__ = (
+        Index("uq_emails_provider_message_id", "provider_message_id", unique=True),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     provider_message_id: Mapped[str] = mapped_column(String, nullable=False)
@@ -133,6 +136,13 @@ class ProposedActionRecord(Base):
 
 class CalendarEventProposalRecord(Base):
     __tablename__ = "calendar_event_proposals"
+    __table_args__ = (
+        Index(
+            "uq_calendar_event_proposals_provider_event_id",
+            "provider_event_id",
+            unique=True,
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     email_id: Mapped[str] = mapped_column(ForeignKey("emails.id"), nullable=False)
@@ -146,6 +156,11 @@ class CalendarEventProposalRecord(Base):
 
 class ToolApprovalRecord(Base):
     __tablename__ = "tool_approvals"
+    __table_args__ = (
+        Index(
+            "uq_tool_approvals_proposal_tool", "proposal_id", "tool_name", unique=True
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     proposal_id: Mapped[str] = mapped_column(
