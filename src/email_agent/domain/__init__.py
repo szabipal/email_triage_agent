@@ -9,10 +9,17 @@ from email_agent.domain.email import (
     EmailThread,
     LowValueType,
     MeetingCandidate,
+    PreferenceEffect,
+    PreferenceType,
+    PriorityBand,
+    PriorityFactor,
+    PriorityFactorDirection,
+    PriorityResult,
     ProcessedEmail,
     ProcessedEmailStatus,
     RetrievalMethod,
     RetrievedContext,
+    UserPreference,
 )
 
 __all__ = [
@@ -26,8 +33,15 @@ __all__ = [
     "EmailThread",
     "LowValueType",
     "MeetingCandidate",
+    "PreferenceEffect",
+    "PreferenceType",
     "ProcessedEmail",
     "ProcessedEmailStatus",
+    "PriorityBand",
+    "PriorityFactor",
+    "PriorityFactorDirection",
+    "PriorityResult",
     "RetrievalMethod",
     "RetrievedContext",
+    "UserPreference",
 ]

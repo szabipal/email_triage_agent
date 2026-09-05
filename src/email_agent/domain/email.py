@@ -5,6 +5,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+JsonValue = str | int | float | bool | None | list[object] | dict[str, object]
+
 
 class EmailSource(StrEnum):
     FIXTURE = "fixture"
@@ -28,6 +30,33 @@ class LowValueType(StrEnum):
 class RetrievalMethod(StrEnum):
     RAG = "rag"
     THREAD = "thread"
+
+
+class PreferenceEffect(StrEnum):
+    BOOST = "boost"
+    PENALIZE = "penalize"
+    DISPLAY = "display"
+
+
+class PreferenceType(StrEnum):
+    SENDER = "sender"
+    CATEGORY = "category"
+    KEYWORD = "keyword"
+    OUTPUT_LANGUAGE = "output_language"
+    LOCALE = "locale"
+    TIMEZONE = "timezone"
+
+
+class PriorityBand(StrEnum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+
+
+class PriorityFactorDirection(StrEnum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    NEUTRAL = "neutral"
 
 
 class EmailIdentity(BaseModel):
@@ -173,6 +202,61 @@ class EmailAnalysisSignals(BaseModel):
     model_name: str | None = None
     prompt_version: str | None = None
     schema_version: str | None = None
+
+
+class UserPreference(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    preference_type: PreferenceType
+    value: JsonValue
+    effect: PreferenceEffect
+    weight: float
+    enabled: bool
+
+    description: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    expires_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_time_range(self) -> UserPreference:
+        if (
+            self.created_at is not None
+            and self.expires_at is not None
+            and self.expires_at < self.created_at
+        ):
+            raise ValueError("expires_at must be after created_at")
+
+        return self
+
+
+class PriorityFactor(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    direction: PriorityFactorDirection
+    weight: float
+    source_ids: list[str] = Field(default_factory=list)
+    details: JsonValue = None
+
+
+class PriorityResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    email_id: str = Field(min_length=1)
+    score: float
+    band: PriorityBand
+    factors: list[PriorityFactor] = Field(min_length=1)
+    calculated_at: datetime
+    ruleset_version: str = Field(min_length=1)
+
+    preference_matches: list[str] = Field(default_factory=list)
+    context_influence: str | None = None
+    deadline_urgency: str | None = None
+    low_value_penalty: str | None = None
+    recalculated_from_id: str | None = None
 
 
 class EmailThread(BaseModel):

@@ -12,10 +12,17 @@ from email_agent.domain import (
     EmailSource,
     EmailThread,
     MeetingCandidate,
+    PreferenceEffect,
+    PreferenceType,
+    PriorityBand,
+    PriorityFactor,
+    PriorityFactorDirection,
+    PriorityResult,
     ProcessedEmail,
     ProcessedEmailStatus,
     RetrievalMethod,
     RetrievedContext,
+    UserPreference,
 )
 
 
@@ -204,4 +211,75 @@ def test_analysis_signals_reject_invalid_confidence() -> None:
             action_required=False,
             low_value_type=None,
             confidence=1.1,
+        )
+
+
+def test_user_preference_serializes_structured_value() -> None:
+    preference = UserPreference(
+        id="preference-1",
+        preference_type=PreferenceType.SENDER,
+        value={"email": "ada@example.com"},
+        effect=PreferenceEffect.BOOST,
+        weight=2.0,
+        enabled=True,
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+    restored = UserPreference.model_validate_json(preference.model_dump_json())
+
+    assert restored == preference
+    assert restored.value == {"email": "ada@example.com"}
+
+
+def test_user_preference_rejects_expiry_before_creation() -> None:
+    with pytest.raises(ValidationError, match="expires_at"):
+        UserPreference(
+            id="preference-1",
+            preference_type=PreferenceType.KEYWORD,
+            value="invoice",
+            effect=PreferenceEffect.BOOST,
+            weight=1.0,
+            enabled=True,
+            created_at=datetime(2026, 1, 2, tzinfo=UTC),
+            expires_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+
+
+def test_priority_result_serializes_reconstructable_factors() -> None:
+    result = PriorityResult(
+        id="priority-1",
+        email_id="email-1",
+        score=82,
+        band=PriorityBand.HIGH,
+        factors=[
+            PriorityFactor(
+                name="known sender",
+                direction=PriorityFactorDirection.POSITIVE,
+                weight=2.0,
+                source_ids=["preference-1", "signals-1"],
+                details={"matched_sender": "ada@example.com"},
+            )
+        ],
+        calculated_at=datetime(2026, 1, 2, 3, 6, tzinfo=UTC),
+        ruleset_version="priority-v1",
+        preference_matches=["preference-1"],
+        context_influence="Earlier thread confirmed urgency.",
+    )
+
+    restored = PriorityResult.model_validate_json(result.model_dump_json())
+
+    assert restored == result
+    assert restored.factors[0].source_ids == ["preference-1", "signals-1"]
+
+
+def test_priority_result_requires_factor() -> None:
+    with pytest.raises(ValidationError, match="factors"):
+        PriorityResult(
+            id="priority-1",
+            email_id="email-1",
+            score=10,
+            band=PriorityBand.LOW,
+            factors=[],
+            calculated_at=datetime(2026, 1, 2, 3, 6, tzinfo=UTC),
+            ruleset_version="priority-v1",
         )
