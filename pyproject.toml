@@ -7,8 +7,49 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.411",
     "pytest>=8.0",
+    "ruff>=0.16.6",
 ]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+line-length = 88
+exclude = [
+    ".git",
+    ".pytest_cache",
+    ".pyright",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "htmlcov",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
+[tool.pyright]
+include = [
+    "src/email_agent",
+    "tests",
+]
+exclude = [
+    ".git",
+    ".pytest_cache",
+    ".pyright",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "htmlcov",
+]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
 
 [build-system]
 requires = ["hatchling"]
