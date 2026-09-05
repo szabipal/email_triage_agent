@@ -8,6 +8,7 @@ def test_core_persistence_tables_are_mapped() -> None:
         "processed_emails",
         "retrieved_contexts",
         "analysis_signals",
+        "email_analyses",
         "priority_results",
         "user_preferences",
         "proposed_actions",

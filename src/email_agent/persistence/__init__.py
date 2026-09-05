@@ -8,6 +8,7 @@ from email_agent.persistence.repositories import (
     PreferenceRepository,
     ProposalRepository,
 )
+from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 
 __all__ = [
     "ActionRepository",
@@ -17,6 +18,7 @@ __all__ = [
     "EmailRepository",
     "PreferenceRepository",
     "ProposalRepository",
+    "SqlAlchemyRepository",
     "make_engine",
     "make_session_factory",
 ]

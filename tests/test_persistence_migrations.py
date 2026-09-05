@@ -17,6 +17,7 @@ def test_initial_migration_creates_core_tables(tmp_path: Path) -> None:
         "emails",
         "processed_emails",
         "analysis_signals",
+        "email_analyses",
         "priority_results",
         "calendar_event_proposals",
         "tool_approvals",

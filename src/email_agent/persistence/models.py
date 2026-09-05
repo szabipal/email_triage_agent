@@ -88,6 +88,27 @@ class PriorityResultRecord(Base):
     payload: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
 
 
+class EmailAnalysisRecord(Base):
+    __tablename__ = "email_analyses"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    email_id: Mapped[str] = mapped_column(ForeignKey("emails.id"), nullable=False)
+    processed_email_id: Mapped[str] = mapped_column(
+        ForeignKey("processed_emails.id"),
+        nullable=False,
+    )
+    signals_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_signals.id"),
+        nullable=False,
+    )
+    priority_result_id: Mapped[str] = mapped_column(
+        ForeignKey("priority_results.id"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+
+
 class UserPreferenceRecord(Base):
     __tablename__ = "user_preferences"
 

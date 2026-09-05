@@ -7,6 +7,7 @@ from email_agent.domain import (
     Email,
     EmailAnalysis,
     EmailAnalysisSignals,
+    PriorityResult,
     ProcessedEmail,
     ProposedAction,
     RetrievedContext,
@@ -27,6 +28,8 @@ class AnalysisRepository(Protocol):
     def save_signals(self, signals: EmailAnalysisSignals) -> None: ...
 
     def save_analysis(self, analysis: EmailAnalysis) -> None: ...
+
+    def save_priority_result(self, priority_result: PriorityResult) -> None: ...
 
 
 class ContextRepository(Protocol):
