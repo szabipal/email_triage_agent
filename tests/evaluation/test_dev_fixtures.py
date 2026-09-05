@@ -32,3 +32,18 @@ def test_dev_fixture_inbox_has_required_initial_scenarios() -> None:
 
     assert {"low-value", "action", "deadline", "meeting", "malformed"} <= scenarios
     assert len(non_english) >= 2
+
+
+def test_dev_fixture_inbox_has_context_case_without_self_leakage() -> None:
+    context_records = [
+        record for record in load_dev_fixtures() if record.labels.retrieval_should_run
+    ]
+
+    assert context_records
+    assert any(
+        record.labels.expected_related_source_email_ids for record in context_records
+    )
+    assert all(
+        record.email.id not in record.labels.expected_related_source_email_ids
+        for record in context_records
+    )
