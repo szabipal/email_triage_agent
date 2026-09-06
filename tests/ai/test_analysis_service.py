@@ -2,7 +2,11 @@ from datetime import UTC, datetime
 
 from email_agent.ai import AnalysisService, FakeLLMProvider, LLMRequest, LLMResponse
 from email_agent.ai.prompts import render_analysis_prompt
-from email_agent.domain import EmailAnalysisSignals, ProcessedEmail, ProcessedEmailStatus
+from email_agent.domain import (
+    EmailAnalysisSignals,
+    ProcessedEmail,
+    ProcessedEmailStatus,
+)
 
 
 class SignalRepo:

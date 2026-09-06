@@ -1,6 +1,11 @@
 import json
 
-from email_agent.ai import FakeLLMProvider, LLMRequest, OpenAILLMProvider, make_llm_provider
+from email_agent.ai import (
+    FakeLLMProvider,
+    LLMRequest,
+    OpenAILLMProvider,
+    make_llm_provider,
+)
 from email_agent.config import Settings
 
 
@@ -22,7 +27,7 @@ def test_openai_adapter_posts_structured_responses_request(monkeypatch) -> None:
         calls.append((request, timeout))
         return Response()
 
-    monkeypatch.setattr("email_agent.ai.real.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("email_agent.ai.real.urlrequest.urlopen", fake_urlopen)
 
     response = OpenAILLMProvider("test-key").complete_structured(
         LLMRequest(
@@ -43,13 +48,15 @@ def test_openai_adapter_posts_structured_responses_request(monkeypatch) -> None:
 
 
 def test_llm_provider_factory_uses_settings() -> None:
-    fake = make_llm_provider(Settings(_env_file=None, llm_provider="fake"))
+    fake = make_llm_provider(Settings(**{"_env_file": None, "llm_provider": "fake"}))
     real = make_llm_provider(
         Settings(
-            _env_file=None,
-            llm_provider="openai",
-            llm_model="gpt-5",
-            llm_api_key="test-key",
+            **{
+                "_env_file": None,
+                "llm_provider": "openai",
+                "llm_model": "gpt-5",
+                "llm_api_key": "test-key",
+            }
         )
     )
 

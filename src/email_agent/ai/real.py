@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Any, cast
-from urllib import request
+from urllib import request as urlrequest
 
 from email_agent.ai.provider import LLMError, LLMRequest, LLMResponse
 
@@ -17,21 +17,21 @@ class OpenAILLMProvider:
         self.api_key = api_key
         self.base_url = base_url
 
-    def complete_structured(self, request_: LLMRequest) -> LLMResponse:
+    def complete_structured(self, request: LLMRequest) -> LLMResponse:
         payload = json.dumps(
             {
-                "model": request_.model,
-                "input": request_.prompt,
+                "model": request.model,
+                "input": request.prompt,
                 "text": {
                     "format": {
                         "type": "json_schema",
-                        "name": request_.schema_name,
-                        "schema": request_.json_schema,
+                        "name": request.schema_name,
+                        "schema": request.json_schema,
                     }
                 },
             }
         ).encode()
-        http_request = request.Request(
+        http_request = urlrequest.Request(
             self.base_url,
             data=payload,
             headers={
@@ -41,14 +41,17 @@ class OpenAILLMProvider:
             method="POST",
         )
 
-        with request.urlopen(http_request, timeout=request_.timeout_seconds) as response:
+        with urlrequest.urlopen(
+            http_request,
+            timeout=request.timeout_seconds,
+        ) as response:
             body = json.loads(response.read())
 
         return LLMResponse(
             output=_extract_json_object(body),
-            model_name=request_.model,
-            prompt_version=request_.prompt_version,
-            schema_version=request_.schema_name,
+            model_name=request.model,
+            prompt_version=request.prompt_version,
+            schema_version=request.schema_name,
         )
 
 
