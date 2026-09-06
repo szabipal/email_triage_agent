@@ -55,6 +55,7 @@ class AnalysisService:
             model=self.model,
             timeout_seconds=self.timeout_seconds,
             max_retries=self.max_retries,
+            json_schema=EmailAnalysisSignals.model_json_schema(),
         )
         errors: list[str] = []
         for _ in range(request.max_retries + 1):

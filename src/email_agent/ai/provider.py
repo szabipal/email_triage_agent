@@ -14,6 +14,7 @@ class LLMRequest(BaseModel):
     model: str = Field(min_length=1)
     timeout_seconds: float = Field(default=30, gt=0)
     max_retries: int = Field(default=0, ge=0)
+    json_schema: dict[str, object] = Field(default_factory=dict)
 
 
 class LLMResponse(BaseModel):
