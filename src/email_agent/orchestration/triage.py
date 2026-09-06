@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict
 from email_agent.ai import AnalysisService
 from email_agent.domain import (
     CalendarEventProposal,
+    CalendarProposalSource,
+    CalendarProposalStatus,
     Email,
     EmailAnalysis,
     EmailAnalysisSignals,
@@ -43,6 +45,8 @@ class TriageRepository(Protocol):
     def save_context(self, context: RetrievedContext) -> None: ...
 
     def save_analysis(self, analysis: EmailAnalysis) -> None: ...
+
+    def save_proposal(self, proposal: CalendarEventProposal) -> None: ...
 
     def list_preferences(self): ...
 
@@ -106,6 +110,10 @@ def triage_email(
         priority_config,
     )
     repository.save_priority_result(priority_result)
+    proposals = _calendar_proposals(email.id, analysis_result.signals)
+    for proposal in proposals:
+        repository.save_proposal(proposal)
+
     analysis = EmailAnalysis(
         id=f"analysis-{email.id}",
         email_id=email.id,
@@ -113,6 +121,7 @@ def triage_email(
         signals_id=analysis_result.signals.id,
         priority_result_id=priority_result.id,
         status=EmailAnalysisStatus.COMPLETED,
+        calendar_proposal_ids=[proposal.id for proposal in proposals],
         explanation=build_priority_explanation(priority_result),
         completed_at=datetime.now(UTC),
     )
@@ -123,6 +132,7 @@ def triage_email(
         signals=analysis_result.signals,
         retrieved_context=retrieved_context,
         priority_result=priority_result,
+        calendar_proposals=proposals,
         analysis=analysis,
     )
 
@@ -148,3 +158,49 @@ def triage_inbox(
         except Exception as error:
             results.append(TriageResult(email_id=email.id, errors=[str(error)]))
     return results
+
+
+def _calendar_proposals(
+    email_id: str,
+    signals: EmailAnalysisSignals,
+) -> list[CalendarEventProposal]:
+    proposals: list[CalendarEventProposal] = []
+    for index, meeting in enumerate(signals.meeting_details, start=1):
+        proposals.append(
+            CalendarEventProposal(
+                id=f"proposal-{email_id}-meeting-{index}",
+                email_id=email_id,
+                title=meeting.title or "Meeting",
+                start_at=meeting.start_at,
+                end_at=meeting.end_at,
+                attendees=meeting.attendees,
+                status=(
+                    CalendarProposalStatus.PENDING
+                    if meeting.start_at
+                    else CalendarProposalStatus.INCOMPLETE
+                ),
+                source=CalendarProposalSource.MEETING,
+                confidence=meeting.confidence,
+                missing_fields=[] if meeting.start_at else ["start_at"],
+                time_ambiguity=meeting.uncertainty,
+            )
+        )
+    for index, deadline in enumerate(signals.deadlines, start=1):
+        proposals.append(
+            CalendarEventProposal(
+                id=f"proposal-{email_id}-deadline-{index}",
+                email_id=email_id,
+                title=deadline.description,
+                start_at=deadline.due_at,
+                status=(
+                    CalendarProposalStatus.PENDING
+                    if deadline.due_at
+                    else CalendarProposalStatus.INCOMPLETE
+                ),
+                source=CalendarProposalSource.DEADLINE,
+                confidence=deadline.confidence,
+                missing_fields=[] if deadline.due_at else ["start_at"],
+                time_ambiguity=deadline.uncertainty,
+            )
+        )
+    return proposals

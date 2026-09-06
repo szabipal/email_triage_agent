@@ -5,10 +5,13 @@ from email_agent.ai import AnalysisService, FakeLLMProvider
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.config import Settings
 from email_agent.domain import (
+    CalendarProposalStatus,
+    DeadlineCandidate,
     Email,
     EmailAnalysisStatus,
     EmailIdentity,
     EmailSource,
+    MeetingCandidate,
     PriorityBand,
 )
 from email_agent.orchestration import triage_email, triage_inbox
@@ -152,3 +155,78 @@ def test_triage_uses_retrieved_context_before_analysis(tmp_path: Path) -> None:
     assert result.retrieved_context[0].source_email_ids == ["email-source"]
     assert result.signals is not None
     assert result.signals.summary.startswith("Context shows")
+
+
+def test_triage_creates_calendar_proposal_from_meeting_signal(tmp_path: Path) -> None:
+    session_factory = make_session_factory(settings(tmp_path))
+    Base.metadata.create_all(session_factory.kw["bind"])
+    email_ = email().model_copy(update={"body_raw": "Let's meet tomorrow."})
+    processed = normalize_email(email_)
+    prompt = render_analysis_prompt(processed, output_language="en")
+    analysis_service = AnalysisService(
+        FakeLLMProvider(
+            {
+                prompt: {
+                    "id": "signals-email-1",
+                    "processed_email_id": processed.id,
+                    "summary": "Ada proposes a meeting.",
+                    "category": "meeting",
+                    "action_required": True,
+                    "low_value_type": None,
+                    "confidence": 0.9,
+                    "meeting_details": [
+                        MeetingCandidate(
+                            title="Review",
+                            start_at=datetime(2026, 1, 2, 14, 30, tzinfo=UTC),
+                        ).model_dump(mode="json")
+                    ],
+                }
+            }
+        )
+    )
+
+    with session_factory.begin() as session:
+        repository = SqlAlchemyRepository(session)
+        result = triage_email(email_, repository, analysis_service)
+
+    assert result.calendar_proposals[0].status == CalendarProposalStatus.PENDING
+    assert result.analysis is not None
+    assert result.analysis.calendar_proposal_ids == ["proposal-email-1-meeting-1"]
+
+
+def test_triage_creates_incomplete_proposal_from_ambiguous_deadline(
+    tmp_path: Path,
+) -> None:
+    session_factory = make_session_factory(settings(tmp_path))
+    Base.metadata.create_all(session_factory.kw["bind"])
+    email_ = email().model_copy(update={"body_raw": "Please finish soon."})
+    processed = normalize_email(email_)
+    prompt = render_analysis_prompt(processed, output_language="en")
+    analysis_service = AnalysisService(
+        FakeLLMProvider(
+            {
+                prompt: {
+                    "id": "signals-email-1",
+                    "processed_email_id": processed.id,
+                    "summary": "Ada asks for work soon.",
+                    "category": "work",
+                    "action_required": True,
+                    "low_value_type": None,
+                    "confidence": 0.9,
+                    "deadlines": [
+                        DeadlineCandidate(
+                            description="Finish soon",
+                            uncertainty="soon is not a concrete date",
+                        ).model_dump(mode="json")
+                    ],
+                }
+            }
+        )
+    )
+
+    with session_factory.begin() as session:
+        repository = SqlAlchemyRepository(session)
+        result = triage_email(email_, repository, analysis_service)
+
+    assert result.calendar_proposals[0].status == CalendarProposalStatus.INCOMPLETE
+    assert result.calendar_proposals[0].missing_fields == ["start_at"]
