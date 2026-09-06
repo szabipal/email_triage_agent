@@ -1,3 +1,4 @@
+from email_agent.ai.fake import FakeLLMProvider
 from email_agent.ai.provider import (
     LLMError,
     LLMProvider,
@@ -6,6 +7,7 @@ from email_agent.ai.provider import (
 )
 
 __all__ = [
+    "FakeLLMProvider",
     "LLMError",
     "LLMProvider",
     "LLMRequest",
