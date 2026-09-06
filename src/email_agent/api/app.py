@@ -14,6 +14,7 @@ from email_agent.orchestration import TriageResult, triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 from email_agent.preprocessing import normalize_email
+from email_agent.domain import UserPreference
 
 
 class HealthResponse(BaseModel):
@@ -113,6 +114,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 retrieved_context=repository.list_context_for_email(email_id),
                 proposals=repository.list_proposals_for_email(email_id),
             )
+
+    @app.get("/preferences", response_model=list[UserPreference])
+    def list_preferences() -> list[UserPreference]:
+        _init_db(session_factory)
+        with session_factory() as session:
+            return SqlAlchemyRepository(session).list_preferences()
+
+    @app.put("/preferences/{preference_id}", response_model=UserPreference)
+    def upsert_preference(
+        preference_id: str,
+        preference: UserPreference,
+    ) -> UserPreference:
+        _init_db(session_factory)
+        saved = preference.model_copy(update={"id": preference_id})
+        with session_factory.begin() as session:
+            SqlAlchemyRepository(session).save_preference(saved)
+        return saved
 
     return app
 
