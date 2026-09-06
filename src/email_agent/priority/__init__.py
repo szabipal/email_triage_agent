@@ -4,6 +4,7 @@ from email_agent.priority.config import (
     PriorityScoringConfig,
     load_priority_config,
 )
+from email_agent.priority.engine import score_priority
 from email_agent.priority.model import PriorityScoringInput
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "PriorityScoringConfig",
     "PriorityScoringInput",
     "load_priority_config",
+    "score_priority",
 ]
