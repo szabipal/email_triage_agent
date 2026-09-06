@@ -98,3 +98,26 @@ def triage_email(
         priority_result=priority_result,
         analysis=analysis,
     )
+
+
+def triage_inbox(
+    emails: list[Email],
+    repository: TriageRepository,
+    analysis_service: AnalysisService,
+    *,
+    priority_config: PriorityScoringConfig | None = None,
+) -> list[TriageResult]:
+    results = []
+    for email in emails:
+        try:
+            results.append(
+                triage_email(
+                    email,
+                    repository,
+                    analysis_service,
+                    priority_config=priority_config,
+                )
+            )
+        except Exception as error:
+            results.append(TriageResult(email_id=email.id, errors=[str(error)]))
+    return results

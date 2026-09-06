@@ -11,7 +11,7 @@ from email_agent.domain import (
     EmailSource,
     PriorityBand,
 )
-from email_agent.orchestration import triage_email
+from email_agent.orchestration import triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.models import Base
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
@@ -75,3 +75,19 @@ def test_single_email_triage_persists_analysis_with_fake_services(tmp_path: Path
     assert result.priority_result is not None
     assert result.priority_result.band == PriorityBand.HIGH
     assert saved is not None
+
+
+def test_batch_triage_isolates_malformed_email_failure(tmp_path: Path) -> None:
+    session_factory = make_session_factory(settings(tmp_path))
+    Base.metadata.create_all(session_factory.kw["bind"])
+    valid = email()
+    invalid = email().model_copy(
+        update={"id": "email-2", "provider_message_id": "provider-2", "body_raw": ""}
+    )
+
+    with session_factory.begin() as session:
+        repository = SqlAlchemyRepository(session)
+        results = triage_inbox([invalid, valid], repository, fake_service(valid))
+
+    assert results[0].errors == ["email body is empty"]
+    assert results[1].analysis is not None
