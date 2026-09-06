@@ -71,6 +71,10 @@ class SqlAlchemyRepository:
             )
         )
 
+    def get_processed_email(self, processed_email_id: str) -> ProcessedEmail | None:
+        record = self.session.get(ProcessedEmailRecord, processed_email_id)
+        return ProcessedEmail.model_validate(record.payload) if record else None
+
     def save_signals(self, signals: EmailAnalysisSignals) -> None:
         self.session.merge(
             AnalysisSignalsRecord(
@@ -82,6 +86,10 @@ class SqlAlchemyRepository:
                 payload=signals.model_dump(mode="json"),
             )
         )
+
+    def get_signals(self, signals_id: str) -> EmailAnalysisSignals | None:
+        record = self.session.get(AnalysisSignalsRecord, signals_id)
+        return EmailAnalysisSignals.model_validate(record.payload) if record else None
 
     def save_analysis(self, analysis: EmailAnalysis) -> None:
         self.session.merge(
@@ -100,6 +108,20 @@ class SqlAlchemyRepository:
         record = self.session.get(EmailAnalysisRecord, analysis_id)
         return EmailAnalysis.model_validate(record.payload) if record else None
 
+    def get_analysis_for_email(self, email_id: str) -> EmailAnalysis | None:
+        record = (
+            self.session.query(EmailAnalysisRecord)
+            .filter_by(email_id=email_id)
+            .one_or_none()
+        )
+        return EmailAnalysis.model_validate(record.payload) if record else None
+
+    def list_analyses(self) -> list[EmailAnalysis]:
+        return [
+            EmailAnalysis.model_validate(record.payload)
+            for record in self.session.query(EmailAnalysisRecord).all()
+        ]
+
     def save_priority_result(self, priority_result: PriorityResult) -> None:
         self.session.merge(
             PriorityResultRecord(
@@ -113,6 +135,10 @@ class SqlAlchemyRepository:
             )
         )
 
+    def get_priority_result(self, priority_result_id: str) -> PriorityResult | None:
+        record = self.session.get(PriorityResultRecord, priority_result_id)
+        return PriorityResult.model_validate(record.payload) if record else None
+
     def save_context(self, context: RetrievedContext) -> None:
         self.session.merge(
             RetrievedContextRecord(
@@ -124,6 +150,14 @@ class SqlAlchemyRepository:
                 payload=context.model_dump(mode="json"),
             )
         )
+
+    def list_context_for_email(self, email_id: str) -> list[RetrievedContext]:
+        return [
+            RetrievedContext.model_validate(record.payload)
+            for record in self.session.query(RetrievedContextRecord)
+            .filter_by(query_email_id=email_id)
+            .all()
+        ]
 
     def save_preference(self, preference: UserPreference) -> None:
         self.session.merge(
@@ -172,6 +206,20 @@ class SqlAlchemyRepository:
     def get_proposal(self, proposal_id: str) -> CalendarEventProposal | None:
         record = self.session.get(CalendarEventProposalRecord, proposal_id)
         return CalendarEventProposal.model_validate(record.payload) if record else None
+
+    def list_proposals(self) -> list[CalendarEventProposal]:
+        return [
+            CalendarEventProposal.model_validate(record.payload)
+            for record in self.session.query(CalendarEventProposalRecord).all()
+        ]
+
+    def list_proposals_for_email(self, email_id: str) -> list[CalendarEventProposal]:
+        return [
+            CalendarEventProposal.model_validate(record.payload)
+            for record in self.session.query(CalendarEventProposalRecord)
+            .filter_by(email_id=email_id)
+            .all()
+        ]
 
     def save_approval(self, approval: ToolApproval) -> None:
         self.session.merge(

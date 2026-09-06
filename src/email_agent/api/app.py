@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from email_agent.ai import AnalysisService, FakeLLMProvider
 from email_agent.ai.prompts import render_analysis_prompt
+from email_agent.api.schemas import ApiError, EmailDetail, InboxItem
 from email_agent.config import Settings, load_settings
 from email_agent.evaluation.validator import validate_fixture_file
 from email_agent.ingestion import import_fixture_emails
@@ -80,7 +81,58 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 return TriageResult(email_id=email_id, errors=["email not found"])
             return triage_email(email, repository, _fixture_analysis_service([email]))
 
+    @app.get("/inbox", response_model=list[InboxItem])
+    def inbox() -> list[InboxItem]:
+        _init_db(session_factory)
+        with session_factory() as session:
+            repository = SqlAlchemyRepository(session)
+            items = [
+                _inbox_item(repository, analysis)
+                for analysis in repository.list_analyses()
+            ]
+        return sorted(items, key=lambda item: item.priority_score, reverse=True)
+
+    @app.get(
+        "/emails/{email_id}",
+        response_model=EmailDetail,
+        responses={404: {"model": ApiError}},
+    )
+    def email_detail(email_id: str):
+        _init_db(session_factory)
+        with session_factory() as session:
+            repository = SqlAlchemyRepository(session)
+            analysis = repository.get_analysis_for_email(email_id)
+            email = repository.get_email(email_id)
+            if analysis is None or email is None:
+                return {"code": "not_found", "message": "email not found"}
+            priority = repository.get_priority_result(analysis.priority_result_id)
+            return EmailDetail(
+                email=email,
+                analysis=analysis,
+                factors=priority.factors if priority else [],
+                retrieved_context=repository.list_context_for_email(email_id),
+                proposals=repository.list_proposals_for_email(email_id),
+            )
+
     return app
+
+
+def _inbox_item(repository: SqlAlchemyRepository, analysis) -> InboxItem:
+    email = repository.get_email(analysis.email_id)
+    signals = repository.get_signals(analysis.signals_id)
+    priority = repository.get_priority_result(analysis.priority_result_id)
+    assert email is not None and signals is not None and priority is not None
+    return InboxItem(
+        email_id=email.id,
+        subject=email.subject,
+        sender=email.sender.email,
+        received_at=email.received_at,
+        summary=signals.summary,
+        category=signals.category,
+        action_required=signals.action_required,
+        priority_band=priority.band,
+        priority_score=priority.score,
+    )
 
 
 def _init_db(session_factory) -> None:
