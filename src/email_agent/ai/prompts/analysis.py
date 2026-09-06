@@ -10,7 +10,9 @@ def render_analysis_prompt(
     processed_email: ProcessedEmail,
     *,
     output_language: str,
+    context: list[str] | None = None,
 ) -> str:
+    context_text = "\n".join(context or [])
     return (
         "Analyze the email into EmailAnalysisSignals JSON. "
         "Include summary, category, action_required, low_value_type, "
@@ -19,4 +21,5 @@ def render_analysis_prompt(
         f"Output language: {output_language}. "
         f"Subject: {processed_email.normalized_subject}\n"
         f"Body: {processed_email.normalized_body}"
+        + (f"\nContext:\n{context_text}" if context_text else "")
     )

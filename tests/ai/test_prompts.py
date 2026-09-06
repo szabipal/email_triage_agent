@@ -30,3 +30,23 @@ def test_analysis_prompt_includes_email_and_language_context() -> None:
     assert "Source language: hu" in prompt
     assert "Output language: en" in prompt
     assert "Szia, kérlek nézd át." in prompt
+
+
+def test_analysis_prompt_can_include_retrieved_context() -> None:
+    processed = ProcessedEmail(
+        id="processed-1",
+        email_id="email-1",
+        normalized_subject="Invoice",
+        normalized_body="Can you approve this?",
+        processed_at=datetime(2026, 1, 1, tzinfo=UTC),
+        status=ProcessedEmailStatus.PROCESSED,
+    )
+
+    prompt = render_analysis_prompt(
+        processed,
+        output_language="en",
+        context=["Legal approved the exception."],
+    )
+
+    assert "Context:" in prompt
+    assert "Legal approved the exception." in prompt

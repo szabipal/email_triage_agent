@@ -44,11 +44,13 @@ class AnalysisService:
         self,
         processed_email: ProcessedEmail,
         repository: SignalRepository | None = None,
+        context: list[str] | None = None,
     ) -> AnalysisResult:
         request = LLMRequest(
             prompt=render_analysis_prompt(
                 processed_email,
                 output_language=self.output_language,
+                context=context,
             ),
             schema_name=ANALYSIS_SCHEMA_VERSION,
             prompt_version=ANALYSIS_VERSION,

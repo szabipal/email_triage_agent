@@ -16,6 +16,7 @@ from email_agent.persistence import make_session_factory
 from email_agent.persistence.models import Base
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 from email_agent.preprocessing import normalize_email
+from email_agent.retrieval import ChromaIndex, FakeEmbeddingProvider, index_processed_email
 
 
 def settings(tmp_path: Path) -> Settings:
@@ -91,3 +92,63 @@ def test_batch_triage_isolates_malformed_email_failure(tmp_path: Path) -> None:
 
     assert results[0].errors == ["email body is empty"]
     assert results[1].analysis is not None
+
+
+def test_triage_uses_retrieved_context_before_analysis(tmp_path: Path) -> None:
+    session_factory = make_session_factory(settings(tmp_path))
+    Base.metadata.create_all(session_factory.kw["bind"])
+    provider = FakeEmbeddingProvider()
+    index = ChromaIndex(tmp_path / "chroma")
+    source = email().model_copy(
+        update={
+            "id": "email-source",
+            "provider_message_id": "provider-source",
+            "subject": "Invoice background",
+            "body_raw": "Legal approved the vendor exception.",
+        }
+    )
+    current = email().model_copy(
+        update={
+            "id": "email-current",
+            "provider_message_id": "provider-current",
+            "subject": "Invoice approval",
+            "body_raw": "Can you approve the invoice?",
+        }
+    )
+    source_processed = normalize_email(source)
+    index_processed_email(source_processed, provider, index)
+    current_processed = normalize_email(current)
+    prompt = render_analysis_prompt(
+        current_processed,
+        output_language="en",
+        context=[f"{source_processed.normalized_subject}\n{source_processed.normalized_body}"],
+    )
+    analysis_service = AnalysisService(
+        FakeLLMProvider(
+            {
+                prompt: {
+                    "id": "signals-current",
+                    "processed_email_id": current_processed.id,
+                    "summary": "Context shows legal approved the exception.",
+                    "category": "finance",
+                    "action_required": True,
+                    "low_value_type": None,
+                    "confidence": 0.9,
+                }
+            }
+        )
+    )
+
+    with session_factory.begin() as session:
+        repository = SqlAlchemyRepository(session)
+        result = triage_email(
+            current,
+            repository,
+            analysis_service,
+            embedding_provider=provider,
+            index=index,
+        )
+
+    assert result.retrieved_context[0].source_email_ids == ["email-source"]
+    assert result.signals is not None
+    assert result.signals.summary.startswith("Context shows")
