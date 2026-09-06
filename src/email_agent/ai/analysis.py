@@ -56,18 +56,23 @@ class AnalysisService:
             timeout_seconds=self.timeout_seconds,
             max_retries=self.max_retries,
         )
-        try:
-            response = self.provider.complete_structured(request)
-            signals = EmailAnalysisSignals.model_validate(
-                response.output
-                | {
-                    "model_name": response.model_name,
-                    "prompt_version": response.prompt_version,
-                    "schema_version": response.schema_version,
-                }
-            )
-        except (LLMError, ValidationError) as error:
-            return AnalysisResult(errors=[str(error)])
+        errors: list[str] = []
+        for _ in range(request.max_retries + 1):
+            try:
+                response = self.provider.complete_structured(request)
+                signals = EmailAnalysisSignals.model_validate(
+                    response.output
+                    | {
+                        "model_name": response.model_name,
+                        "prompt_version": response.prompt_version,
+                        "schema_version": response.schema_version,
+                    }
+                )
+                break
+            except (LLMError, TimeoutError, ValidationError) as error:
+                errors.append(str(error))
+        else:
+            return AnalysisResult(errors=errors)
 
         if repository is not None:
             repository.save_signals(signals)
