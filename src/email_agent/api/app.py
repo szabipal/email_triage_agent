@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -8,13 +9,18 @@ from email_agent.ai import AnalysisService, FakeLLMProvider
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.api.schemas import ApiError, EmailDetail, InboxItem
 from email_agent.config import Settings, load_settings
+from email_agent.domain import (
+    ApprovalDecision,
+    CalendarProposalStatus,
+    ToolApproval,
+    UserPreference,
+)
 from email_agent.evaluation.validator import validate_fixture_file
 from email_agent.ingestion import import_fixture_emails
 from email_agent.orchestration import TriageResult, triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 from email_agent.preprocessing import normalize_email
-from email_agent.domain import UserPreference
 
 
 class HealthResponse(BaseModel):
@@ -31,6 +37,12 @@ class ImportResponse(BaseModel):
 
 class ProcessRequest(BaseModel):
     email_ids: list[str] | None = None
+
+
+class ApprovalRequest(BaseModel):
+    decision: ApprovalDecision
+    decided_by: str
+    approval_notes: str | None = None
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -131,6 +143,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with session_factory.begin() as session:
             SqlAlchemyRepository(session).save_preference(saved)
         return saved
+
+    @app.get("/proposals")
+    def list_proposals():
+        _init_db(session_factory)
+        with session_factory() as session:
+            return SqlAlchemyRepository(session).list_proposals()
+
+    @app.post(
+        "/proposals/{proposal_id}/approval",
+        response_model=ToolApproval,
+        responses={404: {"model": ApiError}},
+    )
+    def decide_proposal(
+        proposal_id: str,
+        request: ApprovalRequest,
+    ):
+        _init_db(session_factory)
+        with session_factory.begin() as session:
+            repository = SqlAlchemyRepository(session)
+            proposal = repository.get_proposal(proposal_id)
+            if proposal is None:
+                return {"code": "not_found", "message": "proposal not found"}
+            proposal.status = (
+                CalendarProposalStatus.APPROVED
+                if request.decision == ApprovalDecision.APPROVED
+                else CalendarProposalStatus.REJECTED
+            )
+            approval = ToolApproval(
+                id=f"approval-{proposal_id}",
+                proposal_id=proposal_id,
+                tool_name="calendar",
+                decision=request.decision,
+                decided_at=datetime.now(UTC),
+                decided_by=request.decided_by,
+                approval_notes=request.approval_notes,
+            )
+            repository.save_proposal(proposal)
+            repository.save_approval(approval)
+            return approval
 
     return app
 
