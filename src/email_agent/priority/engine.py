@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 
 from email_agent.domain import (
     PreferenceEffect,
-    PreferenceType,
     PriorityBand,
     PriorityFactor,
     PriorityFactorDirection,
@@ -39,7 +38,9 @@ def score_priority(
         ],
         context_influence="context used" if input_.retrieved_context else None,
         deadline_urgency="deadline present" if input_.signals.deadlines else None,
-        low_value_penalty="low-value message" if input_.signals.low_value_type else None,
+        low_value_penalty=(
+            "low-value message" if input_.signals.low_value_type else None
+        ),
     )
 
 

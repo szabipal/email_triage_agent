@@ -10,7 +10,6 @@ from email_agent.domain import (
 )
 from email_agent.priority import PriorityScoringInput, score_priority
 
-
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 

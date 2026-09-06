@@ -18,11 +18,15 @@ DEFAULT_PRIORITY_THRESHOLDS = {"high": 70.0, "normal": 30.0}
 class PriorityScoringConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    weights: dict[str, float] = Field(default_factory=lambda: DEFAULT_PRIORITY_WEIGHTS.copy())
-    thresholds: dict[str, float] = Field(default_factory=lambda: DEFAULT_PRIORITY_THRESHOLDS.copy())
+    weights: dict[str, float] = Field(
+        default_factory=lambda: DEFAULT_PRIORITY_WEIGHTS.copy()
+    )
+    thresholds: dict[str, float] = Field(
+        default_factory=lambda: DEFAULT_PRIORITY_THRESHOLDS.copy()
+    )
 
     @model_validator(mode="after")
-    def validate_config(self) -> "PriorityScoringConfig":
+    def validate_config(self) -> PriorityScoringConfig:
         unknown = set(self.weights) - set(DEFAULT_PRIORITY_WEIGHTS)
         if unknown:
             raise ValueError(f"unknown priority weights: {sorted(unknown)}")
