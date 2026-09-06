@@ -4,6 +4,7 @@ from email_agent.retrieval.embeddings import (
     EmbeddingRequest,
     FakeEmbeddingProvider,
 )
+from email_agent.retrieval.indexing import index_processed_email
 from email_agent.retrieval.vector_store import ChromaIndex, VectorDocument, VectorMatch
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "FakeEmbeddingProvider",
     "VectorDocument",
     "VectorMatch",
+    "index_processed_email",
 ]
