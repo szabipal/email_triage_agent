@@ -5,7 +5,9 @@ description = "AI-powered email triage and prioritization system."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.17.2",
+    "chromadb==0.5.23",
     "fastapi>=0.141.1",
+    "onnxruntime<1.20",
     "pydantic-settings>=2.15.0",
     "sqlalchemy>=2.0.45",
 ]
