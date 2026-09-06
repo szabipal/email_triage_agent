@@ -32,7 +32,7 @@ class ChromaIndex:
         ).get_or_create_collection(collection_name)
 
     def add(self, document: VectorDocument) -> None:
-        self.collection.add(
+        self.collection.upsert(
             ids=[document.id],
             documents=[document.text],
             embeddings=[document.embedding],

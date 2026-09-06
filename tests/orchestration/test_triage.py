@@ -19,7 +19,11 @@ from email_agent.persistence import make_session_factory
 from email_agent.persistence.models import Base
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
 from email_agent.preprocessing import normalize_email
-from email_agent.retrieval import ChromaIndex, FakeEmbeddingProvider, index_processed_email
+from email_agent.retrieval import (
+    ChromaIndex,
+    FakeEmbeddingProvider,
+    index_processed_email,
+)
 
 
 def settings(tmp_path: Path) -> Settings:
@@ -61,7 +65,9 @@ def fake_service(email_: Email) -> AnalysisService:
     )
 
 
-def test_single_email_triage_persists_analysis_with_fake_services(tmp_path: Path) -> None:
+def test_single_email_triage_persists_analysis_with_fake_services(
+    tmp_path: Path,
+) -> None:
     session_factory = make_session_factory(settings(tmp_path))
     Base.metadata.create_all(session_factory.kw["bind"])
     email_ = email()
@@ -230,3 +236,21 @@ def test_triage_creates_incomplete_proposal_from_ambiguous_deadline(
 
     assert result.calendar_proposals[0].status == CalendarProposalStatus.INCOMPLETE
     assert result.calendar_proposals[0].missing_fields == ["start_at"]
+
+
+def test_triage_rerun_reuses_deterministic_records(tmp_path: Path) -> None:
+    session_factory = make_session_factory(settings(tmp_path))
+    Base.metadata.create_all(session_factory.kw["bind"])
+    email_ = email()
+
+    with session_factory.begin() as session:
+        repository = SqlAlchemyRepository(session)
+        first = triage_email(email_, repository, fake_service(email_))
+        second = triage_email(email_, repository, fake_service(email_))
+
+    assert first.analysis is not None
+    assert second.analysis is not None
+    assert first.analysis.id == second.analysis.id == "analysis-email-1"
+    assert first.priority_result is not None
+    assert second.priority_result is not None
+    assert first.priority_result.id == second.priority_result.id

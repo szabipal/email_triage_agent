@@ -17,6 +17,7 @@ from email_agent.domain import (
     PriorityResult,
     ProcessedEmail,
     RetrievedContext,
+    UserPreference,
 )
 from email_agent.preprocessing import normalize_email
 from email_agent.priority import (
@@ -48,7 +49,7 @@ class TriageRepository(Protocol):
 
     def save_proposal(self, proposal: CalendarEventProposal) -> None: ...
 
-    def list_preferences(self): ...
+    def list_preferences(self) -> list[UserPreference]: ...
 
 
 class TriageResult(BaseModel):
