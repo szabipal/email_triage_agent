@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from email_agent.domain import ProcessedEmail, RetrievedContext, RetrievalMethod
+from email_agent.domain import ProcessedEmail, RetrievalMethod, RetrievedContext
 from email_agent.retrieval.embeddings import EmbeddingProvider, EmbeddingRequest
 from email_agent.retrieval.vector_store import ChromaIndex
 
@@ -24,7 +24,10 @@ def retrieve_context(
     contexts = []
     for match in index.query(embedding.vector, limit=limit + 1):
         source_email_id = match.metadata.get("email_id")
-        if not isinstance(source_email_id, str) or source_email_id == processed_email.email_id:
+        if (
+            not isinstance(source_email_id, str)
+            or source_email_id == processed_email.email_id
+        ):
             continue
         context = RetrievedContext(
             id=f"context:{processed_email.email_id}:{len(contexts) + 1}",

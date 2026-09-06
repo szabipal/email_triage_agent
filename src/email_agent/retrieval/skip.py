@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from email_agent.domain import EmailAnalysisSignals, ProcessedEmail, RetrievedContext, RetrievalMethod
+from email_agent.domain import (
+    EmailAnalysisSignals,
+    ProcessedEmail,
+    RetrievalMethod,
+    RetrievedContext,
+)
 
 
 class ContextRepository(Protocol):

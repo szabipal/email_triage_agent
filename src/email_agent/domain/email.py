@@ -184,7 +184,9 @@ class RetrievedContext(BaseModel):
     @model_validator(mode="after")
     def validate_context_or_skip(self) -> RetrievedContext:
         if not self.source_email_ids and self.skip_reason is None:
-            raise ValueError("source_email_ids are required unless retrieval is skipped")
+            raise ValueError(
+                "source_email_ids are required unless retrieval is skipped"
+            )
 
         if self.query_email_id in self.source_email_ids:
             raise ValueError("source_email_ids must exclude query_email_id")

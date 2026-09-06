@@ -8,8 +8,8 @@ from email_agent.domain import (
     LowValueType,
     ProcessedEmail,
     ProcessedEmailStatus,
-    RetrievedContext,
     RetrievalMethod,
+    RetrievedContext,
 )
 from email_agent.retrieval import record_retrieval_skip, retrieval_skip_reason
 

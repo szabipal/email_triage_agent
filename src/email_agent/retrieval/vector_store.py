@@ -40,10 +40,10 @@ class ChromaIndex:
         )
 
     def query(self, embedding: list[float], *, limit: int = 3) -> list[VectorMatch]:
-        result = self.collection.query(
+        result: Any = self.collection.query(
             query_embeddings=[embedding],
             n_results=limit,
-            include=["documents", "metadatas", "distances"],
+            include=cast(Any, ["documents", "metadatas", "distances"]),
         )
         ids = result["ids"][0]
         documents = result["documents"][0]
@@ -54,7 +54,7 @@ class ChromaIndex:
                 id=id_,
                 text=document,
                 distance=distance,
-                metadata=metadata or {},
+                metadata=cast(dict[str, str | int | float | bool], metadata or {}),
             )
             for id_, document, distance, metadata in zip(
                 ids,
