@@ -1,0 +1,58 @@
+{
+  "baseline": "empty",
+  "scenario_results": {
+    "action": {
+      "failed": 3,
+      "passed": 0
+    },
+    "calendar-proposal": {
+      "failed": 1,
+      "passed": 0
+    },
+    "context-dependent": {
+      "failed": 1,
+      "passed": 0
+    },
+    "context-source": {
+      "failed": 1,
+      "passed": 0
+    },
+    "deadline": {
+      "failed": 1,
+      "passed": 0
+    },
+    "fallback": {
+      "failed": 0,
+      "passed": 1
+    },
+    "low-value": {
+      "failed": 1,
+      "passed": 0
+    },
+    "malformed": {
+      "failed": 0,
+      "passed": 1
+    },
+    "meeting": {
+      "failed": 2,
+      "passed": 0
+    },
+    "multilingual": {
+      "failed": 2,
+      "passed": 0
+    },
+    "newsletter": {
+      "failed": 1,
+      "passed": 0
+    },
+    "priority": {
+      "failed": 1,
+      "passed": 0
+    },
+    "thread": {
+      "failed": 2,
+      "passed": 0
+    }
+  },
+  "total_records": 8
+}

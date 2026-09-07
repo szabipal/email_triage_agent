@@ -169,7 +169,7 @@ class RetrievedContext(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(min_length=1)
-    source_email_ids: list[str] = Field(min_length=1)
+    source_email_ids: list[str] = Field(default_factory=list)
     query_email_id: str = Field(min_length=1)
     retrieval_method: RetrievalMethod
     summary: str
@@ -182,7 +182,12 @@ class RetrievedContext(BaseModel):
     skip_reason: str | None = None
 
     @model_validator(mode="after")
-    def validate_current_email_excluded(self) -> RetrievedContext:
+    def validate_context_or_skip(self) -> RetrievedContext:
+        if not self.source_email_ids and self.skip_reason is None:
+            raise ValueError(
+                "source_email_ids are required unless retrieval is skipped"
+            )
+
         if self.query_email_id in self.source_email_ids:
             raise ValueError("source_email_ids must exclude query_email_id")
 
