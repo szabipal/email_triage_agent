@@ -1,17 +1,23 @@
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
 from email_agent.ai import AnalysisService, FakeLLMProvider
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.api.schemas import ApiError, EmailDetail, InboxItem
+from email_agent.calendar import (
+    CalendarPort,
+    FakeCalendarAdapter,
+    GoogleCalendarAdapter,
+    decide_proposal,
+    execute_approved_proposal,
+)
 from email_agent.config import Settings, load_settings
 from email_agent.domain import (
     ApprovalDecision,
-    CalendarProposalStatus,
+    CalendarEventProposal,
     ToolApproval,
     UserPreference,
 )
@@ -48,6 +54,7 @@ class ApprovalRequest(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or load_settings()
     session_factory = make_session_factory(resolved_settings)
+    calendar_adapter: CalendarPort = _calendar_adapter(resolved_settings)
 
     app = FastAPI(title="Email Agent API", version="0.1.0")
 
@@ -144,8 +151,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             SqlAlchemyRepository(session).save_preference(saved)
         return saved
 
-    @app.get("/proposals")
-    def list_proposals():
+    @app.get("/proposals", response_model=list[CalendarEventProposal])
+    def list_proposals() -> list[CalendarEventProposal]:
         _init_db(session_factory)
         with session_factory() as session:
             return SqlAlchemyRepository(session).list_proposals()
@@ -155,35 +162,60 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response_model=ToolApproval,
         responses={404: {"model": ApiError}},
     )
-    def decide_proposal(
+    def record_proposal_decision(
         proposal_id: str,
         request: ApprovalRequest,
-    ):
+    ) -> ToolApproval:
         _init_db(session_factory)
         with session_factory.begin() as session:
             repository = SqlAlchemyRepository(session)
             proposal = repository.get_proposal(proposal_id)
             if proposal is None:
-                return {"code": "not_found", "message": "proposal not found"}
-            proposal.status = (
-                CalendarProposalStatus.APPROVED
-                if request.decision == ApprovalDecision.APPROVED
-                else CalendarProposalStatus.REJECTED
-            )
-            approval = ToolApproval(
-                id=f"approval-{proposal_id}",
-                proposal_id=proposal_id,
-                tool_name="calendar",
-                decision=request.decision,
-                decided_at=datetime.now(UTC),
-                decided_by=request.decided_by,
-                approval_notes=request.approval_notes,
-            )
+                raise HTTPException(status_code=404, detail="proposal not found")
+            try:
+                proposal, approval = decide_proposal(
+                    proposal,
+                    request.decision,
+                    decided_by=request.decided_by,
+                    approval_notes=request.approval_notes,
+                )
+            except ValueError as error:
+                raise HTTPException(status_code=409, detail=str(error)) from error
             repository.save_proposal(proposal)
             repository.save_approval(approval)
             return approval
 
+    @app.post(
+        "/proposals/{proposal_id}/execute",
+        response_model=CalendarEventProposal,
+        responses={403: {"model": ApiError}, 404: {"model": ApiError}},
+    )
+    def execute_proposal(proposal_id: str) -> CalendarEventProposal:
+        _init_db(session_factory)
+        with session_factory.begin() as session:
+            repository = SqlAlchemyRepository(session)
+            try:
+                return execute_approved_proposal(
+                    proposal_id,
+                    repository,
+                    calendar_adapter,
+                )
+            except LookupError as error:
+                raise HTTPException(status_code=404, detail=str(error)) from error
+            except PermissionError as error:
+                raise HTTPException(status_code=403, detail=str(error)) from error
+            except RuntimeError as error:
+                raise HTTPException(status_code=502, detail=str(error)) from error
+
     return app
+
+
+def _calendar_adapter(settings: Settings) -> CalendarPort:
+    if settings.calendar_provider == "google" and settings.calendar_execution_enabled:
+        if settings.google_calendar_credentials_path is None:
+            raise ValueError("Google Calendar credentials path is required")
+        return GoogleCalendarAdapter(settings.google_calendar_credentials_path)
+    return FakeCalendarAdapter()
 
 
 def _inbox_item(repository: SqlAlchemyRepository, analysis) -> InboxItem:

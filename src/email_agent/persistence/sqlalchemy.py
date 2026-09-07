@@ -234,3 +234,11 @@ class SqlAlchemyRepository:
                 payload=approval.model_dump(mode="json"),
             )
         )
+
+    def get_approval_for_proposal(self, proposal_id: str) -> ToolApproval | None:
+        record = (
+            self.session.query(ToolApprovalRecord)
+            .filter_by(proposal_id=proposal_id, tool_name="calendar")
+            .one_or_none()
+        )
+        return ToolApproval.model_validate(record.payload) if record else None
