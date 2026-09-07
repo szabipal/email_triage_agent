@@ -96,6 +96,8 @@ Optional container build:
 docker compose build
 ```
 
+Private deployment notes are in `docs/deployment.md`.
+
 ## Current Limits
 
 - Providers default to deterministic fakes.

@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "demo"] = "development"
     database_url: str = "sqlite:///./data/email_agent.db"
     vector_store_path: Path = Path("./data/chroma")
+    allowed_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     llm_provider: Literal["fake", "openai"] = "fake"
     llm_model: str = "fake-llm"

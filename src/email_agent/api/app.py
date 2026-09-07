@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from email_agent.ai import AnalysisService, FakeLLMProvider, make_llm_provider
@@ -62,6 +63,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     calendar_adapter: CalendarPort = _calendar_adapter(resolved_settings)
 
     app = FastAPI(title="Email Agent API", version="0.1.0")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=resolved_settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     def get_settings() -> Settings:
         return resolved_settings
