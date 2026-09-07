@@ -347,6 +347,7 @@ dependencies = [
     { name = "onnxruntime" },
     { name = "pydantic-settings" },
     { name = "sqlalchemy" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -365,6 +366,7 @@ requires-dist = [
     { name = "onnxruntime", specifier = "<1.20" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
+    { name = "uvicorn", specifier = ">=0.38.0" },
 ]
 
 [package.metadata.requires-dev]

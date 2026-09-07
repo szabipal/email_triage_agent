@@ -35,3 +35,6 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+      - name: Privacy check
+        run: uv run python scripts/check_privacy.py
