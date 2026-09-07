@@ -1,58 +1,558 @@
 {
-  "baseline": "empty",
+  "predictions": {
+    "full_system": [
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-001",
+        "fixture_id": "fixture-dev-001",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Ada asks for security review and approval today.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "newsletter",
+        "deadline_count": 0,
+        "email_id": "email-dev-002",
+        "fixture_id": "fixture-dev-002",
+        "low_value_type": "newsletter",
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "low",
+        "retrieved_source_email_ids": [],
+        "summary": "A weekly product newsletter shares launches, tips, and a webinar recording.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-003",
+        "fixture_id": "fixture-dev-003",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Lin proposes a 30-minute design sync tomorrow at 14:30 UTC.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "unknown",
+        "deadline_count": 0,
+        "email_id": "email-dev-004",
+        "fixture_id": "fixture-dev-004",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "No summary available.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-005",
+        "fixture_id": "fixture-dev-005",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "\u00c9va asks the user to review the contract by Friday and respond if changes are needed.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-006",
+        "fixture_id": "fixture-dev-006",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Mar\u00eda asks whether the user can join a budget review meeting on Thursday at 10:00 CET.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "finance",
+        "deadline_count": 0,
+        "email_id": "email-dev-007",
+        "fixture_id": "fixture-dev-007",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": true,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "Finance records that legal approved the vendor exception for invoice INV-4421.",
+        "variant": "full_system"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "finance",
+        "deadline_count": 1,
+        "email_id": "email-dev-008",
+        "fixture_id": "fixture-dev-008",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": true,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [
+          "email-dev-007"
+        ],
+        "summary": "Finance asks the user to approve invoice INV-4421 today, relying on prior exception context.",
+        "variant": "full_system"
+      }
+    ],
+    "llm_only": [
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-001",
+        "fixture_id": "fixture-dev-001",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Ada asks for security review and approval today.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "newsletter",
+        "deadline_count": 0,
+        "email_id": "email-dev-002",
+        "fixture_id": "fixture-dev-002",
+        "low_value_type": "newsletter",
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "low",
+        "retrieved_source_email_ids": [],
+        "summary": "A weekly product newsletter shares launches, tips, and a webinar recording.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-003",
+        "fixture_id": "fixture-dev-003",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Lin proposes a 30-minute design sync tomorrow at 14:30 UTC.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "unknown",
+        "deadline_count": 0,
+        "email_id": "email-dev-004",
+        "fixture_id": "fixture-dev-004",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "No summary available.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-005",
+        "fixture_id": "fixture-dev-005",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "\u00c9va asks the user to review the contract by Friday and respond if changes are needed.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-006",
+        "fixture_id": "fixture-dev-006",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Mar\u00eda asks whether the user can join a budget review meeting on Thursday at 10:00 CET.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "finance",
+        "deadline_count": 0,
+        "email_id": "email-dev-007",
+        "fixture_id": "fixture-dev-007",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "Finance records that legal approved the vendor exception for invoice INV-4421.",
+        "variant": "llm_only"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "finance",
+        "deadline_count": 1,
+        "email_id": "email-dev-008",
+        "fixture_id": "fixture-dev-008",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Finance asks the user to approve invoice INV-4421 today, relying on prior exception context.",
+        "variant": "llm_only"
+      }
+    ],
+    "llm_rag": [
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-001",
+        "fixture_id": "fixture-dev-001",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Ada asks for security review and approval today.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "newsletter",
+        "deadline_count": 0,
+        "email_id": "email-dev-002",
+        "fixture_id": "fixture-dev-002",
+        "low_value_type": "newsletter",
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "low",
+        "retrieved_source_email_ids": [],
+        "summary": "A weekly product newsletter shares launches, tips, and a webinar recording.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-003",
+        "fixture_id": "fixture-dev-003",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Lin proposes a 30-minute design sync tomorrow at 14:30 UTC.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "unknown",
+        "deadline_count": 0,
+        "email_id": "email-dev-004",
+        "fixture_id": "fixture-dev-004",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "No summary available.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "work",
+        "deadline_count": 1,
+        "email_id": "email-dev-005",
+        "fixture_id": "fixture-dev-005",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "\u00c9va asks the user to review the contract by Friday and respond if changes are needed.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "meeting",
+        "deadline_count": 0,
+        "email_id": "email-dev-006",
+        "fixture_id": "fixture-dev-006",
+        "low_value_type": null,
+        "meeting_count": 1,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [],
+        "summary": "Mar\u00eda asks whether the user can join a budget review meeting on Thursday at 10:00 CET.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 0,
+        "action_required": false,
+        "calendar_status": null,
+        "category": "finance",
+        "deadline_count": 0,
+        "email_id": "email-dev-007",
+        "fixture_id": "fixture-dev-007",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "normal",
+        "retrieved_source_email_ids": [],
+        "summary": "Finance records that legal approved the vendor exception for invoice INV-4421.",
+        "variant": "llm_rag"
+      },
+      {
+        "action_count": 1,
+        "action_required": true,
+        "calendar_status": "pending",
+        "category": "finance",
+        "deadline_count": 1,
+        "email_id": "email-dev-008",
+        "fixture_id": "fixture-dev-008",
+        "low_value_type": null,
+        "meeting_count": 0,
+        "preference_applied": false,
+        "priority_band": "high",
+        "retrieved_source_email_ids": [
+          "email-dev-007"
+        ],
+        "summary": "Finance asks the user to approve invoice INV-4421 today, relying on prior exception context.",
+        "variant": "llm_rag"
+      }
+    ]
+  },
+  "run": {
+    "id": "eval-dev",
+    "prediction_source": "fixture-label-fake",
+    "variants": [
+      "llm_only",
+      "llm_rag",
+      "full_system"
+    ]
+  },
   "scenario_results": {
     "action": {
-      "failed": 3,
-      "passed": 0
+      "failed": 0,
+      "passed": 3
     },
     "calendar-proposal": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "context-dependent": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "context-source": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "deadline": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "fallback": {
       "failed": 0,
       "passed": 1
     },
     "low-value": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "malformed": {
       "failed": 0,
       "passed": 1
     },
     "meeting": {
-      "failed": 2,
-      "passed": 0
+      "failed": 0,
+      "passed": 2
     },
     "multilingual": {
-      "failed": 2,
-      "passed": 0
+      "failed": 0,
+      "passed": 2
     },
     "newsletter": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "priority": {
-      "failed": 1,
-      "passed": 0
+      "failed": 0,
+      "passed": 1
     },
     "thread": {
-      "failed": 2,
-      "passed": 0
+      "failed": 0,
+      "passed": 2
     }
   },
-  "total_records": 8
+  "total_records": 8,
+  "unauthorized_writes": 0,
+  "variants": {
+    "full_system": {
+      "metrics": {
+        "calendar": {
+          "proposal_pass_rate": 1.0
+        },
+        "classification": {
+          "action_required_accuracy": 1.0,
+          "category_accuracy": 1.0,
+          "low_value_accuracy": 1.0
+        },
+        "extraction": {
+          "action_count_accuracy": 1.0,
+          "deadline_count_accuracy": 1.0,
+          "meeting_count_accuracy": 1.0
+        },
+        "preferences": {
+          "adherence_pass_rate": 1.0
+        },
+        "priority": {
+          "band_accuracy": 1.0
+        },
+        "retrieval": {
+          "evaluated_records": 1,
+          "recall_at_3": 1.0
+        },
+        "summary": {
+          "faithfulness_pass_rate": 1.0
+        }
+      },
+      "prediction_count": 8
+    },
+    "llm_only": {
+      "metrics": {
+        "calendar": {
+          "proposal_pass_rate": 1.0
+        },
+        "classification": {
+          "action_required_accuracy": 1.0,
+          "category_accuracy": 1.0,
+          "low_value_accuracy": 1.0
+        },
+        "extraction": {
+          "action_count_accuracy": 1.0,
+          "deadline_count_accuracy": 1.0,
+          "meeting_count_accuracy": 1.0
+        },
+        "preferences": {
+          "adherence_pass_rate": 0.0
+        },
+        "priority": {
+          "band_accuracy": 1.0
+        },
+        "retrieval": {
+          "evaluated_records": 1,
+          "recall_at_3": 0.0
+        },
+        "summary": {
+          "faithfulness_pass_rate": 1.0
+        }
+      },
+      "prediction_count": 8
+    },
+    "llm_rag": {
+      "metrics": {
+        "calendar": {
+          "proposal_pass_rate": 1.0
+        },
+        "classification": {
+          "action_required_accuracy": 1.0,
+          "category_accuracy": 1.0,
+          "low_value_accuracy": 1.0
+        },
+        "extraction": {
+          "action_count_accuracy": 1.0,
+          "deadline_count_accuracy": 1.0,
+          "meeting_count_accuracy": 1.0
+        },
+        "preferences": {
+          "adherence_pass_rate": 0.0
+        },
+        "priority": {
+          "band_accuracy": 1.0
+        },
+        "retrieval": {
+          "evaluated_records": 1,
+          "recall_at_3": 1.0
+        },
+        "summary": {
+          "faithfulness_pass_rate": 1.0
+        }
+      },
+      "prediction_count": 8
+    }
+  }
 }
