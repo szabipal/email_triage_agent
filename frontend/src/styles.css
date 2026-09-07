@@ -1,0 +1,199 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #172026;
+  background: #f6f7f9;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 1px solid #c8d0d8;
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  background: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+main {
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  border-bottom: 1px solid #dbe1e6;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.35rem;
+}
+
+h2 {
+  margin-bottom: 0.75rem;
+  font-size: 1.05rem;
+}
+
+h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.9rem;
+}
+
+header p,
+small {
+  color: #62707c;
+}
+
+[role="status"],
+[role="alert"] {
+  margin: 1rem 1.25rem 0;
+}
+
+[role="alert"] {
+  color: #9c2b2b;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.9fr) minmax(20rem, 1.4fr) minmax(
+      16rem,
+      0.9fr
+    );
+  gap: 1px;
+  margin: 1rem;
+  overflow: hidden;
+  border: 1px solid #dbe1e6;
+  border-radius: 8px;
+  background: #dbe1e6;
+}
+
+aside,
+article,
+.layout > section {
+  min-width: 0;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+aside {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+
+aside button {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+}
+
+aside button.selected {
+  border-color: #22577a;
+  background: #eef6f8;
+}
+
+.band {
+  width: fit-content;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: white;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.band.high {
+  background: #9c2b2b;
+}
+
+.band.normal {
+  background: #22577a;
+}
+
+.band.low {
+  background: #667085;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 0.75rem;
+  margin: 1rem 0;
+}
+
+dt {
+  color: #62707c;
+}
+
+dd,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding-left: 1.1rem;
+}
+
+form {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+input,
+select {
+  min-width: 0;
+  border: 1px solid #c8d0d8;
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+}
+
+.proposal {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid #dbe1e6;
+  padding-top: 0.75rem;
+}
+
+.proposal div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
