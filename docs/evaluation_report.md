@@ -39,3 +39,7 @@ All full-system scenarios passed. No unauthorized calendar writes were recorded.
 The report is deterministic and fixture-backed. It proves the local workflow,
 schema contracts, retrieval labels, preference path, and approval gate, but it
 does not claim production LLM quality or real mailbox coverage.
+
+Real-email smoke results should be checked manually with
+`docs/real_email_smoke.md`; they are intentionally not part of CI because they
+require private local email content and an API key.

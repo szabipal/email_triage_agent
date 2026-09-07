@@ -20,3 +20,11 @@ def test_privacy_scan_ignores_generated_frontend_dependencies(tmp_path: Path) ->
     (generated / "index.py").write_text('api_key = "example"\n')  # allow-secret
 
     assert scan_paths([tmp_path]) == []
+
+
+def test_privacy_scan_ignores_real_email_smoke_data(tmp_path: Path) -> None:
+    smoke = tmp_path / "real-email-smoke"
+    smoke.mkdir()
+    (smoke / "message.eml").write_text('password = "example"\n')  # allow-secret
+
+    assert scan_paths([tmp_path]) == []

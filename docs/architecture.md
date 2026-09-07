@@ -9,7 +9,8 @@ demo runs without secrets.
 - `src/email_agent/domain`: Pydantic domain models for email, analysis,
   priority, retrieved context, preferences, calendar proposals, and approvals.
 - `src/email_agent/api`: FastAPI app factory, fixture import, processing,
-  inbox/detail reads, preference writes, and calendar approval/execution routes.
+  `.eml` import, processing, inbox/detail reads, preference writes, and calendar
+  approval/execution routes.
 - `src/email_agent/orchestration`: Plain Python triage flow that normalizes
   email, retrieves context when configured, calls analysis, scores priority, and
   writes calendar proposals.
@@ -27,7 +28,8 @@ demo runs without secrets.
 
 ## Data Flow
 
-1. Fixtures are imported through `POST /imports/fixtures`.
+1. Fixtures are imported through `POST /imports/fixtures`, or controlled local
+   `.eml` files are imported through `POST /imports/eml`.
 2. `POST /processing/inbox` loads emails and runs `triage_inbox`.
 3. Each email is normalized, optionally matched against retrieved context,
    analyzed, scored, and persisted with proposals.
@@ -43,6 +45,10 @@ Configuration is typed in `Settings` and read from `EMAIL_AGENT_` environment
 variables. Real provider credentials are required only when a non-fake provider
 is selected. CI and local gates include tests, type checks, evaluation, and a
 privacy scan for obvious secret patterns.
+
+OpenAI mode uses the configured model for analysis. Real-email smoke testing
+keeps calendar execution on the fake adapter unless a later milestone wires a
+real calendar provider.
 
 Structured logs include stable email IDs and triage stages so local runs can be
 audited without hosted tracing.

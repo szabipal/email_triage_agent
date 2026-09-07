@@ -16,6 +16,8 @@ SKIP_DIRS = {
     ".git",
     ".venv",
     "__pycache__",
+    "data",
+    "real-email-smoke",
     "node_modules",
     "dist",
     ".pytest_cache",

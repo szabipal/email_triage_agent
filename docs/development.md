@@ -98,3 +98,8 @@ Build the optional local demo containers:
 ```bash
 docker compose build
 ```
+
+## Real Email Smoke
+
+For a bounded real LLM test with sanitized `.eml` files, see
+`docs/real_email_smoke.md`. Keep calendar execution fake for this smoke path.

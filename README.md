@@ -38,6 +38,35 @@ Seed and process the demo inbox after the API is running:
 scripts/demo.sh
 ```
 
+## Real Email Smoke
+
+Use a test mailbox or sanitized exported `.eml` files. Keep samples under
+`real-email-smoke/`; that directory and `*.eml` files are ignored by Git.
+
+Start the API with a local throwaway database and OpenAI settings:
+
+```bash
+EMAIL_AGENT_DATABASE_URL=sqlite:///./data/real_email_smoke.db \
+EMAIL_AGENT_LLM_PROVIDER=openai \
+EMAIL_AGENT_LLM_MODEL=gpt-5 \
+EMAIL_AGENT_LLM_API_KEY=... \
+EMAIL_AGENT_CALENDAR_PROVIDER=fake \
+EMAIL_AGENT_CALENDAR_EXECUTION_ENABLED=false \
+uv run uvicorn email_agent.api:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+In another shell, import and process up to five `.eml` files:
+
+```bash
+scripts/real_email_smoke.sh real-email-smoke/message-1.eml
+```
+
+Cleanup:
+
+```bash
+rm -f data/real_email_smoke.db
+```
+
 ## Quality Gate
 
 Backend:
@@ -74,3 +103,4 @@ docker compose build
   `EMAIL_AGENT_CALENDAR_EXECUTION_ENABLED=true` are configured.
 - The dataset is synthetic; do not commit real inbox data or secrets.
 - The frontend is a local demo UI, not a production auth boundary.
+- Real-email smoke testing does not need Gmail, IMAP, or calendar access.

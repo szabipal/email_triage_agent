@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
-from email_agent.ai import AnalysisService, FakeLLMProvider
+from email_agent.ai import AnalysisService, FakeLLMProvider, make_llm_provider
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.api.schemas import ApiError, EmailDetail, InboxItem
 from email_agent.calendar import (
@@ -22,7 +22,7 @@ from email_agent.domain import (
     UserPreference,
 )
 from email_agent.evaluation.validator import validate_fixture_file
-from email_agent.ingestion import import_fixture_emails
+from email_agent.ingestion import import_eml_emails, import_fixture_emails
 from email_agent.orchestration import TriageResult, triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
@@ -35,6 +35,11 @@ class HealthResponse(BaseModel):
 
 class ImportRequest(BaseModel):
     path: Path
+
+
+class EmlImportRequest(BaseModel):
+    paths: list[Path]
+    limit: int = 5
 
 
 class ImportResponse(BaseModel):
@@ -77,6 +82,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         return ImportResponse(imported=len(imported))
 
+    @app.post("/imports/eml", response_model=ImportResponse)
+    def import_eml(request: EmlImportRequest) -> ImportResponse:
+        _init_db(session_factory)
+        with session_factory.begin() as session:
+            imported = import_eml_emails(
+                request.paths,
+                SqlAlchemyRepository(session),
+                limit=request.limit,
+            )
+        return ImportResponse(imported=len(imported))
+
     @app.post("/processing/inbox", response_model=list[TriageResult])
     def process_inbox(request: ProcessRequest) -> list[TriageResult]:
         _init_db(session_factory)
@@ -88,7 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return triage_inbox(
                 emails,
                 repository,
-                _fixture_analysis_service(emails),
+                _analysis_service(resolved_settings, emails),
             )
 
     @app.post("/processing/emails/{email_id}", response_model=TriageResult)
@@ -99,7 +115,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             email = repository.get_email(email_id)
             if email is None:
                 return TriageResult(email_id=email_id, errors=["email not found"])
-            return triage_email(email, repository, _fixture_analysis_service([email]))
+            return triage_email(
+                email,
+                repository,
+                _analysis_service(resolved_settings, [email]),
+            )
 
     @app.get("/inbox", response_model=list[InboxItem])
     def inbox() -> list[InboxItem]:
@@ -270,3 +290,13 @@ def _fixture_analysis_service(emails) -> AnalysisService:
             ],
         }
     return AnalysisService(FakeLLMProvider(outputs))
+
+
+def _analysis_service(settings: Settings, emails) -> AnalysisService:
+    if settings.llm_provider == "fake":
+        return _fixture_analysis_service(emails)
+    return AnalysisService(
+        make_llm_provider(settings),
+        model=settings.llm_model,
+        output_language=settings.output_language,
+    )
