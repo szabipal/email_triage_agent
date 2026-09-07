@@ -38,6 +38,7 @@ The system should remain runnable at each vertical slice. Avoid a large final in
 | M13 Quantitative evaluation | Build scenario pass/fail evaluation and comparison reports. | NFR-09, NFR-13, NFR-15, MVP DoD | M03, M06, M07, M08, M09, M11 | M13-T01 to M13-T06 | Evaluation tests and smoke/full runs | LLM-only, LLM+RAG, full system report generated | Required capabilities have scenarios and reported metrics | Hosted experiment tracking |
 | M14 End-to-end hardening | Add full E2E, failure injection, privacy checks, observability verification, and container build. | NFR-01 to NFR-15, MVP DoD | M10 to M13 | M14-T01 to M14-T06 | Full test/eval/container gates | Slice D works with real or documented demo adapters | Clean environment can run locally | Production auth, continuous monitoring |
 | M15 Documentation and deployment | Finish README, architecture docs, limits, scripted demo, and optional deployment notes. | NFR-05, NFR-12, MVP DoD | M14 | M15-T01 to M15-T04 | Clean setup and docs verification | Another developer can run the demo | Project is portfolio-ready | Managed SaaS deployment |
+| M16 Controlled real-email smoke | Test real email content through a real LLM without live mailbox automation or real calendar writes. | FR-01 to FR-08, FR-12, FR-18, NFR-01, NFR-04, NFR-06, NFR-10, NFR-12 | M15 | M16-T01 to M16-T05 | Backend gate plus manual smoke checklist with sanitized `.eml` files | A small sanitized inbox imports, processes with OpenAI, and remains approval-gated with fake calendar | Real LLM smoke flow is documented, bounded, and reversible | Gmail sync, broad inbox access, real calendar writes |
 
 ## 3. Task Decomposition
 
@@ -141,6 +142,11 @@ Paths are proposed unless already established by ADRs.
 | M15-T02 | Update architecture documentation | Explain implemented architecture. | NFR-07, NFR-10 | ADR-002 to ADR-012 | M14 | proposed `docs/architecture.md` | Component boundaries, data flow, approval enforcement, adapters. | Link/check docs if available. | Base gate | Architecture docs match implemented modules. | New architecture choices. | `Document implemented architecture` |
 | M15-T03 | Produce evaluation report | Capture final scenario results. | NFR-15, MVP DoD | ADR-014 | M13, M14 | proposed `docs/evaluation_report.md` | Include dataset, variants, pass/fail, metrics, limitations. | Evaluation command. | Evaluation gate | Report includes all required capabilities. | Inflated benchmark claims. | `Add V1 evaluation report` |
 | M15-T04 | Script demonstration flow and deployment notes | Prepare portfolio demo. | MVP DoD, NFR-12 | ADR-015 | M15-T01 to M15-T03 | README/docs/scripts | Scripted demo steps, optional deployment notes, limitations. | Demo smoke checklist. | Full gate | Demo shows inbox, RAG, preferences, multilingual, proposal approval. | Production SaaS deployment. | `Document V1 demo flow` |
+| M16-T01 | Wire configured LLM into API processing | Let API processing use fake or OpenAI based on settings. | FR-03 to FR-08, FR-12, FR-18 | ADR-006, ADR-011 | M15 | `src/email_agent/api`, `src/email_agent/ai` | Replace hardcoded fixture analysis service for non-fake mode; keep fixture fake mode default and deterministic. | Provider selection/API tests. | Backend gate | `EMAIL_AGENT_LLM_PROVIDER=openai` requires a key and routes through the OpenAI provider. | Prompt tuning, agent framework. | `Wire configured LLM provider into API` |
+| M16-T02 | Add local `.eml` import | Provide a controlled real-email import path without mailbox credentials. | FR-01, FR-02, NFR-01, NFR-04, NFR-12 | ADR-008, ADR-011 | M16-T01 | `src/email_agent/ingestion`, API/docs/scripts | Parse bounded `.eml` files into Email records; preserve raw body locally; reject directories unless explicit. | `.eml` parser and duplicate tests. | Backend gate | A few exported emails import without Gmail/IMAP access. | Live mailbox sync, attachments. | `Add local eml email import` |
+| M16-T03 | Add real-email privacy guardrails | Keep real content local and reduce accidental leakage. | NFR-04, NFR-10, NFR-12 | ADR-011, ADR-012, ADR-015 | M16-T02 | `.gitignore`, privacy checks, docs | Ensure imported mail DB/vector paths are ignored; document sanitization; keep real email fixtures out of commits. | Privacy check coverage. | Base gate plus privacy scan | Real email artifacts are ignored and warnings are documented. | Enterprise DLP. | `Guard real email smoke data` |
+| M16-T04 | Add real LLM smoke command | Make the manual smoke repeatable. | NFR-05, NFR-06, NFR-10, NFR-12 | ADR-006, ADR-013, ADR-015 | M16-T01 to M16-T03 | `scripts/`, docs | Import 3-5 `.eml` files, process through OpenAI, show inbox/proposals, and keep calendar fake. | Script smoke where possible with fake mode. | Backend gate; manual OpenAI smoke when key is configured | Smoke checklist verifies summaries, actions, deadlines, priorities, and errors. | Automated live-provider CI. | `Add real LLM smoke workflow` |
+| M16-T05 | Document access requirements and rollback | State required keys and safe operating limits. | NFR-04, NFR-05, NFR-12 | ADR-011, ADR-015 | M16-T04 | README/docs | Document OpenAI env vars, no calendar write default, local data cleanup, and what not to grant yet. | Docs review. | Full gate where Docker is available | A tester knows exactly what keys to provide and how to remove local real-email data. | Gmail OAuth, real calendar execution. | `Document real email smoke testing` |
 
 ## 4. Required Task Coverage
 
@@ -160,8 +166,9 @@ All required categories are covered:
 - User interface: M12-T01 through M12-T06.
 - Evaluation: M13-T01 through M13-T06.
 - Hardening and delivery: M14-T01 through M15-T04.
+- Controlled real-email smoke: M16-T01 through M16-T05.
 
-Roadmap gaps: none for Must requirements or Definition-of-Done conditions. FR-17 is Should and is included as optional calendar execution tasks M11-T03 through M11-T06.
+Roadmap gaps: none for Must requirements or Definition-of-Done conditions. FR-17 is Should and is included as optional calendar execution tasks M11-T03 through M11-T06. M16 is a post-V1 smoke-testing milestone for real email content and real LLM calls, not a new production requirement.
 
 ## 5. Dependency Graph
 
@@ -192,6 +199,7 @@ flowchart TD
   M12 --> M14[End-to-end hardening]
   M13 --> M14
   M14 --> M15[Documentation and deployment]
+  M15 --> M16[Controlled real-email smoke]
 ```
 
 Safe parallel work:
@@ -209,7 +217,8 @@ Safe parallel work:
 | Slice A: Deterministic skeleton | M01-T01 to M01-T05, M02, M03-T01, M04-T01 to M04-T04, M05-T01, M06-T02, M07-T03, M09-T01, M10-T02 | A synthetic email passes through ingestion, preprocessing, fake analysis, priority calculation, persistence, and API response. Run Backend gate. |
 | Slice B: Context-aware analysis | Slice A plus M03-T03, M08-T01 to M08-T07, M09-T03, M07-T04 | A context-dependent email retrieves expected source context, receives structured analysis, deterministic ranking, and grounded explanation. Run Evaluation gate. |
 | Slice C: Safe external action | Slice A plus M09-T04, M10-T05, M11-T01 to M11-T04, M12-T05 | A meeting email produces a proposal visible through API/UI; approval is required; fake calendar executes only after approval. Run Backend gate and Frontend gate. |
-| Slice D: Real demonstration | M01 through M15, with M06-T06 and M11-T05 enabled only when credentials are configured | Complete test inbox runs with real LLM, real embeddings, retrieval, priority engine, UI, and approved calendar integration or documented fake/sandbox adapter. Run Full gate. |
+| Slice D: Local demo | M01 through M15, with M06-T06 and M11-T05 enabled only when credentials are configured | Complete test inbox runs with fake or documented demo adapters, retrieval, priority engine, UI, and approval-gated calendar execution. Run Full gate. |
+| Slice E: Controlled real-email smoke | M16-T01 through M16-T05 | A small sanitized `.eml` inbox runs through a configured real LLM, persists results locally, and keeps calendar execution fake unless explicitly enabled later. Run Backend gate plus manual smoke checklist. |
 
 ## 7. Test Gates
 
@@ -230,6 +239,7 @@ Safe parallel work:
 | M13 | Evaluation gate |
 | M14 | Full gate where Docker files exist; otherwise base, backend, frontend, and evaluation gates |
 | M15 | Full gate plus clean-environment setup checklist |
+| M16 | Backend gate; privacy scan; real LLM smoke checklist only when `EMAIL_AGENT_LLM_API_KEY` is configured |
 
 ## 8. Risk Register
 
@@ -273,6 +283,7 @@ Use small commits aligned with tasks. Do not auto-commit unless explicitly autho
 19. One commit per M13 evaluation task.
 20. One commit per M14 hardening task.
 21. One commit per M15 documentation/delivery task.
+22. One commit per M16 controlled real-email smoke task.
 
 Each commit should include relevant tests and leave the current milestone gate passing.
 
@@ -295,7 +306,7 @@ Later prompt generation should use one task row at a time. For tasks with broad 
 
 Shortest dependency path to working MVP:
 
-M01 repository foundation -> M02 domain schemas -> M03 labelled synthetic fixtures -> M04 persistence -> M05 ingestion/preprocessing -> M06 fake structured LLM analysis -> M07 priority engine -> M08 retrieval -> M09 orchestration -> M10 backend API -> M11 proposal/approval with fake calendar -> M12 minimal UI -> M13 scenario evaluation -> M14 full E2E hardening -> M15 README/demo documentation.
+M01 repository foundation -> M02 domain schemas -> M03 labelled synthetic fixtures -> M04 persistence -> M05 ingestion/preprocessing -> M06 fake structured LLM analysis -> M07 priority engine -> M08 retrieval -> M09 orchestration -> M10 backend API -> M11 proposal/approval with fake calendar -> M12 minimal UI -> M13 scenario evaluation -> M14 full E2E hardening -> M15 README/demo documentation -> M16 controlled real-email smoke.
 
 Tasks that may be deferred without weakening the core demonstration:
 
@@ -303,6 +314,7 @@ Tasks that may be deferred without weakening the core demonstration:
 - M11-T05 optional Google Calendar adapter because calendar execution is Should.
 - M14-T06 optional container build if local startup is reliable and deployment is not required.
 - M12 UI polish beyond required loading/error states.
+- M16 Gmail/IMAP sync and real calendar writes until controlled `.eml` plus real LLM smoke testing is acceptable.
 
 Tasks that must not be deferred:
 
@@ -320,6 +332,7 @@ Tasks that must not be deferred:
 - M13 scenario-based evaluation.
 - M14 privacy, failure, and end-to-end checks.
 - M15 setup documentation.
+- M16 privacy guardrails before any real email content is imported.
 
 Recommended first implementation task: M01-T01 Create Python project foundation.
 
