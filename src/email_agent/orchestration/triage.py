@@ -6,10 +6,9 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict
 
 from email_agent.ai import AnalysisService
+from email_agent.calendar import create_calendar_proposals
 from email_agent.domain import (
     CalendarEventProposal,
-    CalendarProposalSource,
-    CalendarProposalStatus,
     Email,
     EmailAnalysis,
     EmailAnalysisSignals,
@@ -111,7 +110,7 @@ def triage_email(
         priority_config,
     )
     repository.save_priority_result(priority_result)
-    proposals = _calendar_proposals(email.id, analysis_result.signals)
+    proposals = create_calendar_proposals(email.id, analysis_result.signals)
     for proposal in proposals:
         repository.save_proposal(proposal)
 
@@ -159,49 +158,3 @@ def triage_inbox(
         except Exception as error:
             results.append(TriageResult(email_id=email.id, errors=[str(error)]))
     return results
-
-
-def _calendar_proposals(
-    email_id: str,
-    signals: EmailAnalysisSignals,
-) -> list[CalendarEventProposal]:
-    proposals: list[CalendarEventProposal] = []
-    for index, meeting in enumerate(signals.meeting_details, start=1):
-        proposals.append(
-            CalendarEventProposal(
-                id=f"proposal-{email_id}-meeting-{index}",
-                email_id=email_id,
-                title=meeting.title or "Meeting",
-                start_at=meeting.start_at,
-                end_at=meeting.end_at,
-                attendees=meeting.attendees,
-                status=(
-                    CalendarProposalStatus.PENDING
-                    if meeting.start_at
-                    else CalendarProposalStatus.INCOMPLETE
-                ),
-                source=CalendarProposalSource.MEETING,
-                confidence=meeting.confidence,
-                missing_fields=[] if meeting.start_at else ["start_at"],
-                time_ambiguity=meeting.uncertainty,
-            )
-        )
-    for index, deadline in enumerate(signals.deadlines, start=1):
-        proposals.append(
-            CalendarEventProposal(
-                id=f"proposal-{email_id}-deadline-{index}",
-                email_id=email_id,
-                title=deadline.description,
-                start_at=deadline.due_at,
-                status=(
-                    CalendarProposalStatus.PENDING
-                    if deadline.due_at
-                    else CalendarProposalStatus.INCOMPLETE
-                ),
-                source=CalendarProposalSource.DEADLINE,
-                confidence=deadline.confidence,
-                missing_fields=[] if deadline.due_at else ["start_at"],
-                time_ambiguity=deadline.uncertainty,
-            )
-        )
-    return proposals
