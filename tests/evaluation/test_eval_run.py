@@ -14,6 +14,17 @@ def test_baseline_eval_writes_report(tmp_path: Path) -> None:
     )
 
     assert report_path.exists()
-    assert report["baseline"] == "empty"
     assert report["total_records"] >= 1
+    assert {"llm_only", "llm_rag", "full_system"} <= set(report["variants"])
     assert "scenario_results" in report
+    assert (
+        report["variants"]["full_system"]["metrics"]["classification"][
+            "category_accuracy"
+        ]
+        == 1.0
+    )
+    assert (
+        report["variants"]["full_system"]["metrics"]["retrieval"]["evaluated_records"]
+        >= 1
+    )
+    assert report["unauthorized_writes"] == 0
