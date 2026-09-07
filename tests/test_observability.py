@@ -68,6 +68,7 @@ def test_triage_logs_processing_status() -> None:
     triage_email(email(), Repo(), service)
 
     events = [json.loads(line) for line in stream.getvalue().splitlines()]
-    assert [event["stage"] for event in events] == ["start", "complete"]
+    assert [event["stage"] for event in events] == ["start", "llm", "complete"]
     assert all(event["email_id"] == "email-1" for event in events)
+    assert events[1]["event"] == "llm analysis completed"
     assert events[-1]["priority_band"] == "high"

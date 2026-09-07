@@ -61,6 +61,8 @@ In another shell, import and process up to five `.eml` files:
 scripts/real_email_smoke.sh real-email-smoke/message-1.eml
 ```
 
+Review output quality with `docs/real_llm_quality_smoke.md`.
+
 Cleanup:
 
 ```bash

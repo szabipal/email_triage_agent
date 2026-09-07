@@ -24,6 +24,10 @@ class LLMResponse(BaseModel):
     model_name: str = Field(min_length=1)
     prompt_version: str = Field(min_length=1)
     schema_version: str = Field(min_length=1)
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    estimated_cost_usd: float | None = Field(default=None, ge=0)
 
 
 class LLMError(RuntimeError):

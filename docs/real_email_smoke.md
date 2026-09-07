@@ -32,6 +32,9 @@ Check the inbox UI or API output for summary, action-required, deadlines,
 priority, errors, and any proposal status. Calendar proposal execution stays
 fake.
 
+Use `docs/real_llm_quality_smoke.md` to review output quality without storing
+raw private content.
+
 ## Cleanup
 
 ```bash
