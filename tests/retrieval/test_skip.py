@@ -27,9 +27,10 @@ def signals(low_value_type=None) -> EmailAnalysisSignals:
 
 
 def test_retrieval_skip_reason_handles_low_value_and_no_history() -> None:
-    assert retrieval_skip_reason(
-        signals(LowValueType.NEWSLETTER), has_history=True
-    ) == "low_value"
+    assert (
+        retrieval_skip_reason(signals(LowValueType.NEWSLETTER), has_history=True)
+        == "low_value"
+    )
     assert retrieval_skip_reason(signals(), has_history=False) == "no_history"
     assert retrieval_skip_reason(signals(), has_history=True) is None
 

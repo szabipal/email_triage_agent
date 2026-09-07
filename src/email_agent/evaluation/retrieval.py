@@ -13,9 +13,7 @@ def recall_at_k(
     if not expected_ids:
         return 1.0
     retrieved = {
-        source_id
-        for context in contexts[:k]
-        for source_id in context.source_email_ids
+        source_id for context in contexts[:k] for source_id in context.source_email_ids
     }
     return len(set(expected_ids) & retrieved) / len(set(expected_ids))
 

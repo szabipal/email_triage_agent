@@ -130,7 +130,9 @@ def test_triage_uses_retrieved_context_before_analysis(tmp_path: Path) -> None:
     prompt = render_analysis_prompt(
         current_processed,
         output_language="en",
-        context=[f"{source_processed.normalized_subject}\n{source_processed.normalized_body}"],
+        context=[
+            f"{source_processed.normalized_subject}\n{source_processed.normalized_body}"
+        ],
     )
     analysis_service = AnalysisService(
         FakeLLMProvider(
