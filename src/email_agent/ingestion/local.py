@@ -106,8 +106,13 @@ def _identities(value: str) -> list[EmailIdentity]:
 
 def _plain_body(message) -> str:
     if message.is_multipart():
+        html_body = ""
         for part in message.walk():
-            if part.get_content_type() == "text/plain":
-                return str(part.get_content())
-        return ""
+            content_type = part.get_content_type()
+            content = str(part.get_content()) if not part.is_multipart() else ""
+            if content_type == "text/plain" and content.strip():
+                return content
+            if not html_body and content_type == "text/html" and content.strip():
+                html_body = content
+        return html_body
     return str(message.get_content())

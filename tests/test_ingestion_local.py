@@ -72,6 +72,49 @@ def test_load_eml_email_parses_basic_message(tmp_path: Path) -> None:
     assert email.body_raw.strip() == "Please review this today."
 
 
+def test_load_eml_email_falls_back_to_html_body(tmp_path: Path) -> None:
+    path = tmp_path / "message.eml"
+    path.write_text(
+        "Message-ID: <real-html@example.test>\n"
+        "From: ada@example.test\n"
+        "To: user@example.test\n"
+        "Subject: HTML only\n"
+        "MIME-Version: 1.0\n"
+        'Content-Type: multipart/alternative; boundary="boundary"\n\n'
+        "--boundary\n"
+        "Content-Type: text/html; charset=utf-8\n\n"
+        "<html><body><p>Please review this today.</p></body></html>\n"
+        "--boundary--\n"
+    )
+
+    email = load_eml_email(path)
+
+    assert "Please review this today" in email.body_raw
+
+
+def test_load_eml_email_skips_empty_plain_part_for_html_body(tmp_path: Path) -> None:
+    path = tmp_path / "message.eml"
+    path.write_text(
+        "Message-ID: <real-empty-plain@example.test>\n"
+        "From: ada@example.test\n"
+        "To: user@example.test\n"
+        "Subject: HTML fallback\n"
+        "MIME-Version: 1.0\n"
+        'Content-Type: multipart/alternative; boundary="boundary"\n\n'
+        "--boundary\n"
+        "Content-Type: text/plain; charset=utf-8\n\n"
+        "\n"
+        "--boundary\n"
+        "Content-Type: text/html; charset=utf-8\n\n"
+        "<html><body><p>Please pay this bill.</p></body></html>\n"
+        "--boundary--\n"
+    )
+
+    email = load_eml_email(path)
+
+    assert "Please pay this bill" in email.body_raw
+
+
 def test_import_eml_emails_limits_and_skips_duplicates(tmp_path: Path) -> None:
     session_factory = make_session_factory(build_settings(tmp_path))
     Base.metadata.create_all(session_factory.kw["bind"])

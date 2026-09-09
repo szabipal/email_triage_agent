@@ -54,11 +54,59 @@ def test_openai_adapter_posts_structured_responses_request(monkeypatch) -> None:
     posted = json.loads(calls[0][0].data)
     assert calls[0][1] == 3
     assert posted["text"]["format"]["type"] == "json_schema"
-    assert posted["text"]["format"]["schema"] == {"type": "object"}
+    assert posted["text"]["format"]["schema"] == {
+        "type": "object",
+        "additionalProperties": False,
+    }
     assert response.output == {"summary": "ok"}
     assert response.input_tokens == 10
     assert response.output_tokens == 5
     assert response.total_tokens == 15
+
+
+def test_openai_adapter_requires_all_schema_properties(monkeypatch) -> None:
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr("email_agent.ai.real.urlrequest.urlopen", fake_urlopen)
+
+    OpenAILLMProvider("test-key").complete_structured(
+        LLMRequest(
+            prompt="Analyze.",
+            schema_name="signals-v1",
+            prompt_version="analysis-v1",
+            model="gpt-5",
+            json_schema={
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "default": ""},
+                    "owner": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "email": {"type": "string"},
+                                    "name": {"type": "string"},
+                                },
+                            },
+                            {"type": "null"},
+                        ],
+                    },
+                },
+            },
+        )
+    )
+
+    schema = json.loads(calls[0][0].data)["text"]["format"]["schema"]
+    assert schema["required"] == ["summary", "owner"]
+    assert schema["additionalProperties"] is False
+    assert "default" not in schema["properties"]["summary"]
+    nested_owner = schema["properties"]["owner"]["anyOf"][0]
+    assert nested_owner["required"] == ["email", "name"]
+    assert nested_owner["additionalProperties"] is False
 
 
 def test_llm_provider_factory_uses_settings() -> None:

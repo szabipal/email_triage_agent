@@ -28,7 +28,7 @@ class OpenAILLMProvider:
                     "format": {
                         "type": "json_schema",
                         "name": request.schema_name,
-                        "schema": request.json_schema,
+                        "schema": _openai_strict_schema(request.json_schema),
                     }
                 },
             }
@@ -79,6 +79,33 @@ def _extract_json_object(body: Any) -> dict[str, object]:
                     return cast(dict[str, object], json.loads(text))
 
     raise LLMError("OpenAI response did not contain structured JSON text")
+
+
+def _openai_strict_schema(schema: dict[str, object]) -> dict[str, object]:
+    strict_schema = _require_all_object_properties(schema)
+    strict_schema["additionalProperties"] = False
+    return strict_schema
+
+
+def _require_all_object_properties(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_require_all_object_properties(item) for item in value]
+
+    if not isinstance(value, dict):
+        return value
+
+    result = {
+        key: _require_all_object_properties(item)
+        for key, item in value.items()
+        if key != "default"
+    }
+
+    properties = result.get("properties")
+    if isinstance(properties, dict):
+        result["required"] = list(properties)
+        result.setdefault("additionalProperties", False)
+
+    return result
 
 
 def _usage_fields(body: Any) -> dict[str, int]:
