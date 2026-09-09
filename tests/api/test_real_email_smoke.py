@@ -104,8 +104,11 @@ def test_api_syncs_gmail_and_caps_llm_body(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     prompts: list[str] = []
+    label_calls = []
+    import_kwargs = []
 
     def fake_import_gmail_unread(repository, **kwargs):
+        import_kwargs.append(kwargs)
         email = Email(
             id="gmail-email-1",
             provider_message_id="gmail:1",
@@ -139,12 +142,19 @@ def test_api_syncs_gmail_and_caps_llm_body(
             schema_version=request.schema_name,
         )
 
+    def fake_apply_gmail_labels(assignments, **kwargs):
+        label_calls.extend(assignments)
+        return len(assignments)
+
     monkeypatch.setattr(
         "email_agent.api.app.import_gmail_unread", fake_import_gmail_unread
     )
     monkeypatch.setattr(
         "email_agent.ai.real.OpenAILLMProvider.complete_structured",
         fake_complete,
+    )
+    monkeypatch.setattr(
+        "email_agent.api.app.apply_gmail_labels", fake_apply_gmail_labels
     )
     client = TestClient(
         create_app(
@@ -154,6 +164,7 @@ def test_api_syncs_gmail_and_caps_llm_body(
                 llm_model="gpt-test",
                 llm_api_key="test-key",  # allow-secret
                 gmail_credentials_path=tmp_path / "credentials.json",
+                gmail_label_write_enabled=True,
                 llm_max_body_chars=3,
             )
         )
@@ -162,8 +173,16 @@ def test_api_syncs_gmail_and_caps_llm_body(
     response = client.post("/sync/gmail", json={})
 
     assert response.status_code == 200
-    assert response.json() == {"imported": 1, "processed": 1, "errors": []}
+    assert response.json() == {
+        "imported": 1,
+        "processed": 1,
+        "labeled": 1,
+        "errors": [],
+    }
     assert "Body: abc\n[truncated]" in prompts[0]
+    assert import_kwargs[0]["write_enabled"] is True
+    assert label_calls[0].gmail_message_id == "1"
+    assert label_calls[0].label_names == ["AI/Billing", "AI/Action Required"]
     assert client.get("/inbox").json()[0]["email_id"] == "gmail-email-1"
 
 

@@ -50,6 +50,7 @@ export type Proposal = {
 export type GmailSyncResult = {
   imported: number;
   processed: number;
+  labeled: number;
   errors: string[];
 };
 

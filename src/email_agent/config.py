@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     gmail_token_path: Path = Path("./data/gmail_token.json")
     gmail_sync_query: str = "label:UNREAD"
     gmail_sync_limit: int = Field(default=10, gt=0, le=50)
+    gmail_label_write_enabled: bool = False
 
     output_language: str = "en"
     locale: str = "en_US"

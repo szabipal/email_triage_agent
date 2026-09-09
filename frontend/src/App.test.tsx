@@ -57,7 +57,7 @@ beforeEach(() => {
       if (url.endsWith("/preferences")) return json([]);
       if (url.endsWith("/proposals") && !init?.method) return json(proposals);
       if (url.endsWith("/sync/gmail")) {
-        return json({ imported: 1, processed: 1, errors: [] });
+        return json({ imported: 1, processed: 1, labeled: 1, errors: [] });
       }
       if (url.endsWith("/approval")) return json({ proposal_id: "proposal-1" });
       if (url.endsWith("/execute")) {
@@ -109,7 +109,7 @@ test("sync gmail calls endpoint and reloads inbox", async () => {
     );
   });
   expect(
-    await screen.findByText("Gmail sync imported 1 and analyzed 1."),
+    await screen.findByText("Gmail sync imported 1, analyzed 1, and labeled 1."),
   ).toBeInTheDocument();
 });
 

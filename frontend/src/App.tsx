@@ -50,7 +50,7 @@ export function App() {
     try {
       const result = await api.syncGmail();
       setNotice(
-        `Gmail sync imported ${result.imported} and analyzed ${result.processed}.`,
+        `Gmail sync imported ${result.imported}, analyzed ${result.processed}, and labeled ${result.labeled}.`,
       );
       await load();
     } catch (err) {
