@@ -3,6 +3,7 @@ from email_agent.ingestion.local import (
     import_fixture_emails,
     load_eml_email,
     load_fixture_emails,
+    load_rfc822_email,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "import_fixture_emails",
     "load_eml_email",
     "load_fixture_emails",
+    "load_rfc822_email",
 ]

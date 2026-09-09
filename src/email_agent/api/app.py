@@ -24,6 +24,7 @@ from email_agent.domain import (
 )
 from email_agent.evaluation.validator import validate_fixture_file
 from email_agent.ingestion import import_eml_emails, import_fixture_emails
+from email_agent.ingestion.gmail import GmailSyncError, import_gmail_unread
 from email_agent.orchestration import TriageResult, triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
@@ -45,6 +46,17 @@ class EmlImportRequest(BaseModel):
 
 class ImportResponse(BaseModel):
     imported: int
+
+
+class GmailSyncRequest(BaseModel):
+    query: str | None = None
+    limit: int | None = None
+
+
+class GmailSyncResponse(BaseModel):
+    imported: int
+    processed: int
+    errors: list[str] = []
 
 
 class ProcessRequest(BaseModel):
@@ -100,6 +112,40 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 limit=request.limit,
             )
         return ImportResponse(imported=len(imported))
+
+    @app.post("/sync/gmail", response_model=GmailSyncResponse)
+    def sync_gmail(request: GmailSyncRequest) -> GmailSyncResponse:
+        if resolved_settings.gmail_credentials_path is None:
+            raise HTTPException(
+                status_code=400,
+                detail="EMAIL_AGENT_GMAIL_CREDENTIALS_PATH is required",
+            )
+
+        _init_db(session_factory)
+        limit = request.limit or resolved_settings.gmail_sync_limit
+        query = request.query or resolved_settings.gmail_sync_query
+        with session_factory.begin() as session:
+            repository = SqlAlchemyRepository(session)
+            try:
+                imported = import_gmail_unread(
+                    repository,
+                    credentials_path=resolved_settings.gmail_credentials_path,
+                    token_path=resolved_settings.gmail_token_path,
+                    query=query,
+                    limit=limit,
+                )
+            except GmailSyncError as error:
+                raise HTTPException(status_code=400, detail=str(error)) from error
+            results = triage_inbox(
+                imported,
+                repository,
+                _analysis_service(resolved_settings, imported),
+            )
+        return GmailSyncResponse(
+            imported=len(imported),
+            processed=sum(1 for item in results if item.analysis is not None),
+            errors=[error for item in results for error in item.errors],
+        )
 
     @app.post("/processing/inbox", response_model=list[TriageResult])
     def process_inbox(request: ProcessRequest) -> list[TriageResult]:
@@ -307,4 +353,5 @@ def _analysis_service(settings: Settings, emails) -> AnalysisService:
         make_llm_provider(settings),
         model=settings.llm_model,
         output_language=settings.output_language,
+        max_body_chars=settings.llm_max_body_chars,
     )

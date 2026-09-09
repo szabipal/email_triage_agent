@@ -50,3 +50,21 @@ def test_analysis_prompt_can_include_retrieved_context() -> None:
 
     assert "Context:" in prompt
     assert "Legal approved the exception." in prompt
+
+
+def test_analysis_prompt_caps_body() -> None:
+    prompt = render_analysis_prompt(
+        ProcessedEmail(
+            id="processed-email-1",
+            email_id="email-1",
+            normalized_subject="Long email",
+            normalized_body="abcdef",
+            processed_at=datetime.now(UTC),
+            status=ProcessedEmailStatus.PROCESSED,
+        ),
+        output_language="en",
+        max_body_chars=3,
+    )
+
+    assert "Body: abc\n[truncated]" in prompt
+    assert "abcdef" not in prompt

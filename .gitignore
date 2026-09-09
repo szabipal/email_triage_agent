@@ -8,6 +8,7 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+secrets/
 data/
 real-email-smoke/
 *.eml

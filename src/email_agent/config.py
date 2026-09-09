@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     llm_provider: Literal["fake", "openai"] = "fake"
     llm_model: str = "fake-llm"
     llm_api_key: SecretStr | None = None
+    llm_max_body_chars: int = Field(default=8000, gt=0)
 
     embedding_provider: Literal["fake", "openai"] = "fake"
     embedding_model: str = "fake-embedding"
@@ -32,6 +33,11 @@ class Settings(BaseSettings):
     calendar_provider: Literal["fake", "google"] = "fake"
     calendar_execution_enabled: bool = False
     google_calendar_credentials_path: Path | None = None
+
+    gmail_credentials_path: Path | None = None
+    gmail_token_path: Path = Path("./data/gmail_token.json")
+    gmail_sync_query: str = "label:UNREAD"
+    gmail_sync_limit: int = Field(default=10, gt=0, le=50)
 
     output_language: str = "en"
     locale: str = "en_US"

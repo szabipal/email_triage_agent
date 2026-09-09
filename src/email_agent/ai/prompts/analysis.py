@@ -11,8 +11,10 @@ def render_analysis_prompt(
     *,
     output_language: str,
     context: list[str] | None = None,
+    max_body_chars: int | None = None,
 ) -> str:
     context_text = "\n".join(context or [])
+    body = _capped_body(processed_email.normalized_body, max_body_chars)
     return (
         "Analyze the email into EmailAnalysisSignals JSON. "
         "Include summary, category, action_required, low_value_type, "
@@ -20,6 +22,11 @@ def render_analysis_prompt(
         f"Source language: {processed_email.detected_language or 'unknown'}. "
         f"Output language: {output_language}. "
         f"Subject: {processed_email.normalized_subject}\n"
-        f"Body: {processed_email.normalized_body}"
-        + (f"\nContext:\n{context_text}" if context_text else "")
+        f"Body: {body}" + (f"\nContext:\n{context_text}" if context_text else "")
     )
+
+
+def _capped_body(body: str, max_body_chars: int | None) -> str:
+    if max_body_chars is None or len(body) <= max_body_chars:
+        return body
+    return body[:max_body_chars].rstrip() + "\n[truncated]"

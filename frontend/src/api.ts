@@ -47,6 +47,12 @@ export type Proposal = {
   provider_event_id?: string | null;
 };
 
+export type GmailSyncResult = {
+  imported: number;
+  processed: number;
+  errors: string[];
+};
+
 const base = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -75,4 +81,9 @@ export const api = {
     }),
   executeProposal: (id: string) =>
     request<Proposal>(`/proposals/${id}/execute`, { method: "POST" }),
+  syncGmail: () =>
+    request<GmailSyncResult>("/sync/gmail", {
+      method: "POST",
+      body: JSON.stringify({ limit: 10 }),
+    }),
 };

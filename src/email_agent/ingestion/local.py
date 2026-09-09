@@ -35,8 +35,20 @@ def import_fixture_emails(
 
 
 def load_eml_email(path: Path) -> Email:
-    message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
-    message_id = str(message.get("Message-ID") or path.resolve())
+    return load_rfc822_email(
+        path.read_bytes(),
+        fallback_provider_message_id=str(path.resolve()),
+    )
+
+
+def load_rfc822_email(
+    data: bytes,
+    *,
+    fallback_provider_message_id: str,
+    source: EmailSource = EmailSource.FILE,
+) -> Email:
+    message = BytesParser(policy=policy.default).parsebytes(data)
+    message_id = str(message.get("Message-ID") or fallback_provider_message_id)
     received_at = _parsed_date(str(message.get("Date") or ""))
     body = _plain_body(message)
     sender = _identities(str(message.get("From") or "")) or [
@@ -54,7 +66,7 @@ def load_eml_email(path: Path) -> Email:
         recipients=recipients,
         received_at=received_at,
         body_raw=body,
-        source=EmailSource.FILE,
+        source=source,
         cc=_identities(str(message.get("Cc") or "")),
         reply_to=(_identities(str(message.get("Reply-To") or "")) or [None])[0],
         headers={key: str(value) for key, value in message.items()},
