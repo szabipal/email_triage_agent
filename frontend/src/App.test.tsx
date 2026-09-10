@@ -109,7 +109,9 @@ test("sync gmail calls endpoint and reloads inbox", async () => {
     );
   });
   expect(
-    await screen.findByText("Gmail sync imported 1, analyzed 1, and labeled 1."),
+    await screen.findByText(
+      "Gmail sync imported 1, analyzed 1, and labeled 1.",
+    ),
   ).toBeInTheDocument();
 });
 
