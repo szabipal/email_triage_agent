@@ -14,6 +14,10 @@ def test_settings_use_fake_safe_defaults() -> None:
     assert settings.environment == "development"
     assert settings.database_url == "sqlite:///./data/email_agent.db"
     assert settings.vector_store_path.as_posix() == "data/chroma"
+    assert settings.allowed_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
     assert settings.llm_provider == "fake"
     assert settings.embedding_provider == "fake"
     assert settings.calendar_provider == "fake"
@@ -29,6 +33,7 @@ def test_settings_read_environment_overrides(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("EMAIL_AGENT_OUTPUT_LANGUAGE", "hu")
     monkeypatch.setenv("EMAIL_AGENT_LOCALE", "hu_HU")
     monkeypatch.setenv("EMAIL_AGENT_TIMEZONE", "Europe/Budapest")
+    monkeypatch.setenv("EMAIL_AGENT_ALLOWED_ORIGINS", '["https://demo.example"]')
 
     settings = build_settings()
 
@@ -37,6 +42,7 @@ def test_settings_read_environment_overrides(monkeypatch: pytest.MonkeyPatch) ->
     assert settings.output_language == "hu"
     assert settings.locale == "hu_HU"
     assert settings.timezone == "Europe/Budapest"
+    assert settings.allowed_origins == ["https://demo.example"]
 
 
 def test_real_llm_provider_requires_api_key() -> None:

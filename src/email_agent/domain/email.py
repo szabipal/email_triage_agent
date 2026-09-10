@@ -259,6 +259,10 @@ class EmailAnalysisSignals(BaseModel):
     model_name: str | None = None
     prompt_version: str | None = None
     schema_version: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    estimated_cost_usd: float | None = Field(default=None, ge=0)
 
 
 class UserPreference(BaseModel):

@@ -55,6 +55,15 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run pytest
+uv run python scripts/check_privacy.py
+```
+
+## Evaluation
+
+Regenerate the local fixture evaluation report:
+
+```bash
+uv run python -m email_agent.evaluation.run --config proposed/config/eval.dev.json
 ```
 
 ## Health Check
@@ -72,3 +81,25 @@ Expected output:
 ```text
 {'status': 'ok'}
 ```
+
+## Local App
+
+Run the API and frontend together:
+
+```bash
+scripts/dev.sh
+```
+
+API: `http://127.0.0.1:8000`
+Frontend: `http://127.0.0.1:5173`
+
+Build the optional local demo containers:
+
+```bash
+docker compose build
+```
+
+## Real Email Smoke
+
+For a bounded real LLM test with sanitized `.eml` files, see
+`docs/real_email_smoke.md`. Keep calendar execution fake for this smoke path.

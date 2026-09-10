@@ -8,6 +8,10 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+secrets/
+data/
+real-email-smoke/
+*.eml
 frontend/node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo

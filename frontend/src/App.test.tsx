@@ -56,6 +56,9 @@ beforeEach(() => {
       if (url.endsWith("/emails/email-1")) return json(detail);
       if (url.endsWith("/preferences")) return json([]);
       if (url.endsWith("/proposals") && !init?.method) return json(proposals);
+      if (url.endsWith("/sync/gmail")) {
+        return json({ imported: 1, processed: 1, labeled: 1, errors: [] });
+      }
       if (url.endsWith("/approval")) return json({ proposal_id: "proposal-1" });
       if (url.endsWith("/execute")) {
         return json({ ...proposals[0], status: "executed" });
@@ -92,6 +95,24 @@ test("approval calls approval then execution endpoints", async () => {
       expect.objectContaining({ method: "POST" }),
     );
   });
+});
+
+test("sync gmail calls endpoint and reloads inbox", async () => {
+  render(<App />);
+
+  fireEvent.click(await screen.findByText("Sync Gmail"));
+
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/sync/gmail"),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+  expect(
+    await screen.findByText(
+      "Gmail sync imported 1, analyzed 1, and labeled 1.",
+    ),
+  ).toBeInTheDocument();
 });
 
 test("shows loading and error states", async () => {

@@ -1,12 +1,21 @@
+import json
 from datetime import UTC, datetime
+from io import StringIO
 
-from email_agent.ai import AnalysisService, FakeLLMProvider, LLMRequest, LLMResponse
+from email_agent.ai import (
+    AnalysisService,
+    FakeLLMProvider,
+    LLMError,
+    LLMRequest,
+    LLMResponse,
+)
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.domain import (
     EmailAnalysisSignals,
     ProcessedEmail,
     ProcessedEmailStatus,
 )
+from email_agent.logging import configure_logging
 
 
 class SignalRepo:
@@ -79,6 +88,7 @@ def test_analysis_service_retries_timeout_and_then_persists() -> None:
     assert result.signals is not None
     assert provider.calls == 2
     assert repo.saved == [result.signals]
+    assert result.signals.total_tokens == 12
 
 
 def test_analysis_service_never_persists_invalid_output() -> None:
@@ -93,6 +103,19 @@ def test_analysis_service_never_persists_invalid_output() -> None:
 
     assert result.signals is None
     assert repo.saved == []
+
+
+def test_analysis_service_logs_sanitized_provider_failures() -> None:
+    stream = StringIO()
+    configure_logging(stream=stream)
+
+    result = AnalysisService(FailingProvider()).analyze(processed_email())
+
+    events = [json.loads(line) for line in stream.getvalue().splitlines()]
+    assert result.errors == ["LLMError"]
+    assert events[0]["event"] == "llm analysis failed"
+    assert events[0]["error_type"] == "LLMError"
+    assert "private prompt" not in stream.getvalue()
 
 
 class FlakyProvider:
@@ -116,4 +139,12 @@ class FlakyProvider:
             model_name=request.model,
             prompt_version=request.prompt_version,
             schema_version=request.schema_name,
+            input_tokens=8,
+            output_tokens=4,
+            total_tokens=12,
         )
+
+
+class FailingProvider:
+    def complete_structured(self, request: LLMRequest) -> LLMResponse:
+        raise LLMError("private prompt should not be logged")

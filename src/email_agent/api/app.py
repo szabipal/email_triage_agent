@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from email_agent.ai import AnalysisService, FakeLLMProvider
+from email_agent.ai import AnalysisService, FakeLLMProvider, make_llm_provider
 from email_agent.ai.prompts import render_analysis_prompt
 from email_agent.api.schemas import ApiError, EmailDetail, InboxItem
 from email_agent.calendar import (
@@ -22,7 +23,14 @@ from email_agent.domain import (
     UserPreference,
 )
 from email_agent.evaluation.validator import validate_fixture_file
-from email_agent.ingestion import import_fixture_emails
+from email_agent.ingestion import import_eml_emails, import_fixture_emails
+from email_agent.ingestion.gmail import (
+    GmailLabelAssignment,
+    GmailSyncError,
+    apply_gmail_labels,
+    gmail_label_names,
+    import_gmail_unread,
+)
 from email_agent.orchestration import TriageResult, triage_email, triage_inbox
 from email_agent.persistence import make_session_factory
 from email_agent.persistence.sqlalchemy import SqlAlchemyRepository
@@ -37,8 +45,25 @@ class ImportRequest(BaseModel):
     path: Path
 
 
+class EmlImportRequest(BaseModel):
+    paths: list[Path]
+    limit: int = 5
+
+
 class ImportResponse(BaseModel):
     imported: int
+
+
+class GmailSyncRequest(BaseModel):
+    query: str | None = None
+    limit: int | None = None
+
+
+class GmailSyncResponse(BaseModel):
+    imported: int
+    processed: int
+    labeled: int = 0
+    errors: list[str] = []
 
 
 class ProcessRequest(BaseModel):
@@ -57,6 +82,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     calendar_adapter: CalendarPort = _calendar_adapter(resolved_settings)
 
     app = FastAPI(title="Email Agent API", version="0.1.0")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=resolved_settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     def get_settings() -> Settings:
         return resolved_settings
@@ -77,6 +109,58 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         return ImportResponse(imported=len(imported))
 
+    @app.post("/imports/eml", response_model=ImportResponse)
+    def import_eml(request: EmlImportRequest) -> ImportResponse:
+        _init_db(session_factory)
+        with session_factory.begin() as session:
+            imported = import_eml_emails(
+                request.paths,
+                SqlAlchemyRepository(session),
+                limit=request.limit,
+            )
+        return ImportResponse(imported=len(imported))
+
+    @app.post("/sync/gmail", response_model=GmailSyncResponse)
+    def sync_gmail(request: GmailSyncRequest) -> GmailSyncResponse:
+        if resolved_settings.gmail_credentials_path is None:
+            raise HTTPException(
+                status_code=400,
+                detail="EMAIL_AGENT_GMAIL_CREDENTIALS_PATH is required",
+            )
+
+        _init_db(session_factory)
+        limit = request.limit or resolved_settings.gmail_sync_limit
+        query = request.query or resolved_settings.gmail_sync_query
+        with session_factory.begin() as session:
+            repository = SqlAlchemyRepository(session)
+            try:
+                imported = import_gmail_unread(
+                    repository,
+                    credentials_path=resolved_settings.gmail_credentials_path,
+                    token_path=resolved_settings.gmail_token_path,
+                    query=query,
+                    limit=limit,
+                    write_enabled=resolved_settings.gmail_label_write_enabled,
+                )
+            except GmailSyncError as error:
+                raise HTTPException(status_code=400, detail=str(error)) from error
+            results = triage_inbox(
+                imported,
+                repository,
+                _analysis_service(resolved_settings, imported),
+            )
+            labeled = _label_gmail_results(
+                resolved_settings,
+                repository,
+                results,
+            )
+        return GmailSyncResponse(
+            imported=len(imported),
+            processed=sum(1 for item in results if item.analysis is not None),
+            labeled=labeled,
+            errors=[error for item in results for error in item.errors],
+        )
+
     @app.post("/processing/inbox", response_model=list[TriageResult])
     def process_inbox(request: ProcessRequest) -> list[TriageResult]:
         _init_db(session_factory)
@@ -88,7 +172,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return triage_inbox(
                 emails,
                 repository,
-                _fixture_analysis_service(emails),
+                _analysis_service(resolved_settings, emails),
             )
 
     @app.post("/processing/emails/{email_id}", response_model=TriageResult)
@@ -99,7 +183,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             email = repository.get_email(email_id)
             if email is None:
                 return TriageResult(email_id=email_id, errors=["email not found"])
-            return triage_email(email, repository, _fixture_analysis_service([email]))
+            return triage_email(
+                email,
+                repository,
+                _analysis_service(resolved_settings, [email]),
+            )
 
     @app.get("/inbox", response_model=list[InboxItem])
     def inbox() -> list[InboxItem]:
@@ -270,3 +358,48 @@ def _fixture_analysis_service(emails) -> AnalysisService:
             ],
         }
     return AnalysisService(FakeLLMProvider(outputs))
+
+
+def _analysis_service(settings: Settings, emails) -> AnalysisService:
+    if settings.llm_provider == "fake":
+        return _fixture_analysis_service(emails)
+    return AnalysisService(
+        make_llm_provider(settings),
+        model=settings.llm_model,
+        output_language=settings.output_language,
+        max_body_chars=settings.llm_max_body_chars,
+    )
+
+
+def _label_gmail_results(
+    settings: Settings,
+    repository: SqlAlchemyRepository,
+    results: list[TriageResult],
+) -> int:
+    if not settings.gmail_label_write_enabled:
+        return 0
+    if settings.gmail_credentials_path is None:
+        return 0
+
+    assignments = []
+    for result in results:
+        if result.signals is None:
+            continue
+        email = repository.get_email(result.email_id)
+        if email is None or not email.provider_message_id.startswith("gmail:"):
+            continue
+        gmail_message_id = email.provider_message_id.removeprefix("gmail:")
+        assignments.append(
+            GmailLabelAssignment(
+                gmail_message_id=gmail_message_id,
+                label_names=gmail_label_names(
+                    result.signals, result.calendar_proposals
+                ),
+            )
+        )
+
+    return apply_gmail_labels(
+        assignments,
+        credentials_path=settings.gmail_credentials_path,
+        token_path=settings.gmail_token_path,
+    )

@@ -19,7 +19,9 @@ export function App() {
   const [draftPreference, setDraftPreference] =
     useState<Preference>(emptyPreference);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string>();
+  const [notice, setNotice] = useState<string>();
 
   async function load() {
     setLoading(true);
@@ -38,6 +40,23 @@ export function App() {
       setError(err instanceof Error ? err.message : "Unable to load inbox");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function syncGmail() {
+    setSyncing(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      const result = await api.syncGmail();
+      setNotice(
+        `Gmail sync imported ${result.imported}, analyzed ${result.processed}, and labeled ${result.labeled}.`,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sync Gmail");
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -84,11 +103,17 @@ export function App() {
           <h1>Email Agent</h1>
           <p>{inbox.length} analyzed messages</p>
         </div>
-        <button onClick={() => void load()}>Refresh</button>
+        <div className="header-actions">
+          <button disabled={syncing} onClick={() => void syncGmail()}>
+            {syncing ? "Syncing..." : "Sync Gmail"}
+          </button>
+          <button onClick={() => void load()}>Refresh</button>
+        </div>
       </header>
 
       {loading && <p role="status">Loading inbox...</p>}
       {error && <p role="alert">Could not load data.</p>}
+      {notice && <p role="status">{notice}</p>}
 
       <section className="layout">
         <aside aria-label="Prioritized inbox">

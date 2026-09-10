@@ -18,6 +18,7 @@ from email_agent.domain import (
     RetrievedContext,
     UserPreference,
 )
+from email_agent.logging import get_logger, log_event
 from email_agent.preprocessing import normalize_email
 from email_agent.priority import (
     PriorityScoringConfig,
@@ -31,6 +32,8 @@ from email_agent.retrieval import (
     index_processed_email,
     retrieve_context,
 )
+
+logger = get_logger(__name__)
 
 
 class TriageRepository(Protocol):
@@ -73,6 +76,7 @@ def triage_email(
     index: ChromaIndex | None = None,
     priority_config: PriorityScoringConfig | None = None,
 ) -> TriageResult:
+    log_event(logger, "triage started", email_id=email.id, stage="start")
     repository.save_email(email)
     processed_email = normalize_email(email)
     repository.save_processed_email(processed_email)
@@ -85,6 +89,13 @@ def triage_email(
             index,
             repository=repository,
         )
+        log_event(
+            logger,
+            "retrieval completed",
+            email_id=email.id,
+            stage="retrieval",
+            fields={"retrieved_count": len(retrieved_context)},
+        )
         index_processed_email(processed_email, embedding_provider, index)
 
     analysis_result = analysis_service.analyze(
@@ -93,6 +104,13 @@ def triage_email(
         context=[item.summary for item in retrieved_context],
     )
     if analysis_result.signals is None:
+        log_event(
+            logger,
+            "analysis failed",
+            email_id=email.id,
+            stage="analysis",
+            fields={"errors": "; ".join(analysis_result.errors)},
+        )
         return TriageResult(
             email_id=email.id,
             processed_email=processed_email,
@@ -126,6 +144,16 @@ def triage_email(
         completed_at=datetime.now(UTC),
     )
     repository.save_analysis(analysis)
+    log_event(
+        logger,
+        "triage completed",
+        email_id=email.id,
+        stage="complete",
+        fields={
+            "priority_band": priority_result.band.value,
+            "proposal_count": len(proposals),
+        },
+    )
     return TriageResult(
         email_id=email.id,
         processed_email=processed_email,

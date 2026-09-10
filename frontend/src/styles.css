@@ -75,6 +75,11 @@ small {
   color: #62707c;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 [role="status"],
 [role="alert"] {
   margin: 1rem 1.25rem 0;
