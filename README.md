@@ -1,21 +1,40 @@
 # Email Agent
 
-Email Agent is a local-first AI email triage app. It imports a synthetic inbox,
-extracts structured signals, ranks priority, retrieves related context, applies
-user preferences, and creates calendar proposals that require explicit approval
-before execution.
+I built this project because my inbox is noisy in a very specific way: useful
+messages get mixed together with low-value emails, promotions, old threads, and
+newsletters I may or may not actually care about. I wanted a small local system
+that could help me separate the things that need attention from the things that
+can wait or be ignored, without giving an automated agent permission to take
+actions on my behalf.
 
-The default demo runs with deterministic fake AI providers, so the full system
-can be cloned, tested, and reviewed without API keys or private email data.
+The app imports emails, extracts structured signals, ranks them by priority,
+retrieves related context from previous messages, applies simple user
+preferences, and creates calendar proposals that still require explicit approval
+before anything is executed.
+
+The default demo uses synthetic fixture data and deterministic fake AI
+providers. That means the project can be cloned, tested, and reviewed without
+API keys or private email content.
 
 ## Why This Project Exists
 
-This project is a portfolio-grade example of practical AI engineering rather
-than a thin prompt wrapper. It shows how to build an LLM feature behind stable
-interfaces, test the orchestration deterministically, evaluate behavior with
-fixtures, and keep risky tool actions behind approval gates.
+I did not want this to be just a prompt attached to an inbox. The interesting
+part for me was the system around the model: how to make the output structured,
+how to test behavior without calling a real LLM, how to explain priority
+decisions, and how to keep writes to external tools behind a clear approval
+boundary.
 
-It demonstrates:
+The use case I had in mind was:
+
+- Spot messages that actually need a reply, decision, review, or calendar
+  action.
+- Push newsletters, promotions, and low-value messages down unless I have said
+  they matter.
+- Use previous emails as context when a message depends on an earlier thread.
+- Keep the default workflow local and reproducible.
+- Avoid committing any real email data, OAuth tokens, or API keys.
+
+The project is structured around that goal:
 
 - FastAPI backend with typed request and response schemas.
 - React and TypeScript inbox UI for triage, preferences, and approvals.
@@ -23,15 +42,16 @@ It demonstrates:
 - Retrieval-augmented context using a local Chroma vector store.
 - Rule-based priority scoring with explanations.
 - SQLAlchemy persistence with Alembic migrations.
-- Gmail import and label-writing boundaries, disabled unless configured.
-- Calendar proposal flow with fake and Google adapter boundaries.
+- Gmail import and optional label-writing boundaries, disabled unless
+  configured.
+- Calendar proposal flow that requires approval before execution.
 - Scenario evaluation for classification, retrieval, preferences, priority, and
-  unauthorized-write checks.
+  unauthorized write checks.
 - CI-friendly tests, type checks, formatting, linting, and privacy scanning.
 
 ## Demo Flow
 
-The local demo uses `datasets/fixtures/dev.jsonl` and fake providers:
+The local demo runs on `datasets/fixtures/dev.jsonl` and fake providers:
 
 1. Import synthetic emails.
 2. Analyze each email into structured signals.
@@ -41,7 +61,7 @@ The local demo uses `datasets/fixtures/dev.jsonl` and fake providers:
 6. Review the prioritized inbox in the frontend.
 7. Approve or reject proposed calendar actions.
 
-No real mailbox, calendar, or model credentials are required for this path.
+No real mailbox, calendar, or model credentials are needed for this path.
 
 ## Architecture
 
